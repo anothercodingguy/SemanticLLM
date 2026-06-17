@@ -937,7 +937,7 @@ def get_dashboard():
 
             const bubble = document.createElement('div');
             bubble.className = 'msg-bubble';
-            bubble.innerHTML = escapeHtml(text).replace(/\n/g, '<br/>');
+            bubble.innerHTML = escapeHtml(text).replace(/\\n/g, '<br/>');
             msgDiv.appendChild(bubble);
 
             if (meta) {
