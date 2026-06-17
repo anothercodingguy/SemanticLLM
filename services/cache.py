@@ -14,7 +14,7 @@ QDRANT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "qdrant_d
 if settings.QDRANT_URL:
     client = AsyncQdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
 else:
-    client = AsyncQdrantClient(path=QDRANT_PATH)
+    client = AsyncQdrantClient(location=":memory:")
 
 async def init_cache():
     """
