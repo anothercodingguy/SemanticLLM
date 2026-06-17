@@ -10,10 +10,8 @@ def get_redis_client():
     global redis_client
     if redis_client is None:
         if settings.REDIS_URL:
-            # Support TLS connections via rediss:// if needed
             redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
         else:
-            # Fallback for local testing
             redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
     return redis_client
 
@@ -79,5 +77,46 @@ async def record_metric(
             
             await pipe.execute()
     except Exception as e:
-        # Log to stdout for Vercel logs, but do not block the user response
         print(f"Failed to record metrics in Redis: {e}")
+
+async def get_metrics_summary() -> dict:
+    """
+    Query Redis and return a consolidated dict of metrics.
+    """
+    client = get_redis_client()
+    try:
+        # Fetch aggregates
+        total_saved = float(await client.get("gateway_metric:total_cost_saved") or 0.0)
+        total_spent = float(await client.get("gateway_metric:total_cost_spent") or 0.0)
+        total_requests = int(await client.get("gateway_metric:total_requests") or 0)
+        cache_hits = int(await client.get("gateway_metric:cache_hits") or 0)
+        total_latency = float(await client.get("gateway_metric:total_latency") or 0.0)
+        
+        # Calculate rates
+        hit_rate = (cache_hits / total_requests) * 100 if total_requests > 0 else 0.0
+        avg_latency = total_latency / total_requests if total_requests > 0 else 0.0
+        
+        # Fetch last 20 queries from list
+        raw_queries = await client.lrange("gateway_queries", 0, 19)
+        queries = [json.loads(q) for q in raw_queries]
+        
+        return {
+            "total_saved": total_saved,
+            "total_spent": total_spent,
+            "total_requests": total_requests,
+            "cache_hits": cache_hits,
+            "hit_rate": hit_rate,
+            "avg_latency": avg_latency,
+            "queries": queries
+        }
+    except Exception as e:
+        print(f"Failed to fetch metrics from Redis: {e}")
+        return {
+            "total_saved": 0.0,
+            "total_spent": 0.0,
+            "total_requests": 0,
+            "cache_hits": 0,
+            "hit_rate": 0.0,
+            "avg_latency": 0.0,
+            "queries": []
+        }
