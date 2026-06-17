@@ -30,7 +30,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Cache-Lookup"],  # Expose this custom header for CORS requests
+    expose_headers=["X-Cache-Lookup"],
 )
 
 # Include the router under /v1 to match OpenAI spec
@@ -157,7 +157,7 @@ def get_dashboard():
             display: block;
         }
 
-        /* Analytics Tab CSS */
+        /* Metrics Cards Grid */
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -173,7 +173,7 @@ def get_dashboard():
             border-radius: 16px;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.75rem;
             transition: all 0.3s ease;
         }
 
@@ -182,15 +182,29 @@ def get_dashboard():
             transform: translateY(-4px);
         }
 
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .metric-title {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .metric-value-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
         }
 
         .metric-value {
-            font-size: 2.25rem;
+            font-size: 2.15rem;
             font-weight: 700;
         }
 
@@ -198,15 +212,51 @@ def get_dashboard():
         .metric-card.spent .metric-value { color: var(--warning); }
         .metric-card.hitrate .metric-value { color: #38bdf8; }
 
+        .value-trend {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .value-trend.green { color: var(--success); }
+
+        .metric-desc {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* Circular Doughnut Progress */
+        .circular-progress {
+            position: relative;
+            width: 36px;
+            height: 36px;
+        }
+        .circular-progress svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 4;
+        }
+        .circle {
+            fill: none;
+            stroke: #38bdf8;
+            stroke-width: 4;
+            stroke-linecap: round;
+            transition: stroke-dasharray 0.3s ease;
+        }
+
+        /* Dashboard Content Cards */
         .dashboard-body {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 2rem;
+            gap: 1.5rem;
         }
 
         @media (min-width: 900px) {
             .dashboard-body {
-                grid-template-columns: 1fr 1.2fr;
+                grid-template-columns: 1.1fr 1.3fr;
             }
         }
 
@@ -216,7 +266,8 @@ def get_dashboard():
             backdrop-filter: blur(12px);
             border-radius: 16px;
             padding: 1.5rem;
-            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .card-title {
@@ -233,6 +284,7 @@ def get_dashboard():
             width: 100%;
         }
 
+        /* Query Log Table Styles */
         .table-container {
             max-height: 400px;
             overflow-y: auto;
@@ -245,15 +297,15 @@ def get_dashboard():
         }
 
         th, td {
-            padding: 1rem;
+            padding: 1rem 0.75rem;
             border-bottom: 1px solid var(--card-border);
-            font-size: 0.875rem;
+            font-size: 0.85rem;
         }
 
         th {
             color: var(--text-muted);
             font-weight: 600;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.25);
             position: sticky;
             top: 0;
             z-index: 10;
@@ -263,42 +315,64 @@ def get_dashboard():
             background: rgba(255, 255, 255, 0.01);
         }
 
+        /* Badges & Dots */
         .badge {
             display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
+            padding: 0.25rem 0.65rem;
+            border-radius: 99px;
             font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .badge.hit {
-            background: var(--success-glow);
-            color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .badge.miss {
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-weight: 600;
+            text-transform: capitalize;
         }
 
         .badge.simple {
-            background: rgba(56, 189, 248, 0.15);
+            background: rgba(56, 189, 248, 0.12);
             color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.2);
         }
 
-        .badge.complex {
-            background: rgba(168, 85, 247, 0.15);
+        .badge.advanced {
+            background: rgba(168, 85, 247, 0.12);
             color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .status-dot {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .status-dot::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .status-dot.hit {
+            color: var(--success);
+        }
+        .status-dot.hit::before {
+            background: var(--success);
+        }
+
+        .status-dot.miss {
+            color: var(--warning);
+        }
+        .status-dot.miss::before {
+            background: var(--warning);
         }
 
         .prompt-text {
-            max-width: 200px;
+            max-width: 160px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #e2e8f0;
         }
 
         /* Chat Tab CSS */
@@ -418,7 +492,7 @@ def get_dashboard():
             box-shadow: none;
         }
 
-        /* Scrollbar */
+        /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -442,7 +516,7 @@ def get_dashboard():
                 <p style="color: var(--text-muted); margin-top: 0.25rem;">Cost-Aware Routing & Semantic Cache Playground</p>
             </div>
             <div style="font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; background: var(--card-bg); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
-                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%;"></span>
+                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; box-shadow: 0 0 8px var(--success);"></span>
                 Online (Render)
             </div>
         </header>
@@ -456,27 +530,78 @@ def get_dashboard():
         <!-- Analytics Tab -->
         <div id="tab-analytics" class="tab-content active">
             <div class="metrics-grid">
+                
+                <!-- 1. Total Cost Saved -->
                 <div class="metric-card saved">
-                    <div class="metric-title">Total Cost Saved</div>
-                    <div class="metric-value" id="val-saved">$0.000000</div>
+                    <div class="metric-header">
+                        <span class="metric-title">Total Cost Saved</span>
+                        <span class="metric-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success);"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        </span>
+                    </div>
+                    <div class="metric-value-container">
+                        <span class="metric-value" id="val-saved">$0.000000</span>
+                        <span class="value-trend green">↗</span>
+                    </div>
+                    <div class="metric-desc">Estimated saved by cache hits</div>
                 </div>
+
+                <!-- 2. Total Cost Spent -->
                 <div class="metric-card spent">
-                    <div class="metric-title">Total Cost Spent</div>
+                    <div class="metric-header">
+                        <span class="metric-title">Total Cost Spent</span>
+                        <span class="metric-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--warning);">
+                                <ellipse cx="12" cy="6" rx="8" ry="3"></ellipse>
+                                <path d="M4 6v8c0 1.66 3.58 3 8 3s8-1.34 8-3V6"></path>
+                                <path d="M4 11c0 1.66 3.58 3 8 3s8-1.34 8-3"></path>
+                            </svg>
+                        </span>
+                    </div>
                     <div class="metric-value" id="val-spent">$0.000000</div>
+                    <div class="metric-desc">Total API spend on upstream models</div>
                 </div>
+
+                <!-- 3. Cache Hit Rate -->
                 <div class="metric-card hitrate">
-                    <div class="metric-title">Cache Hit Rate</div>
-                    <div class="metric-value" id="val-hitrate">0.00%</div>
+                    <div class="metric-header">
+                        <span class="metric-title">Cache Hit Rate</span>
+                    </div>
+                    <div class="metric-value-container">
+                        <span class="metric-value" id="val-hitrate">0.00%</span>
+                        <div class="circular-progress">
+                            <svg viewBox="0 0 36 36">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="circle" id="hitrate-circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="metric-desc">Semantically cached queries vs. total</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-title">Average Latency</div>
-                    <div class="metric-value" id="val-latency" style="color: #a7f3d0;">0.00 ms</div>
+
+                <!-- 4. Average Latency -->
+                <div class="metric-card latency">
+                    <div class="metric-header">
+                        <span class="metric-title">Average Latency</span>
+                        <span class="metric-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </span>
+                    </div>
+                    <div class="metric-value-container" style="justify-content: flex-start; gap: 0.25rem; margin: 0.25rem 0;">
+                        <span class="metric-value" id="val-latency-cached" style="font-size: 1.5rem; color: var(--success);">0ms</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted); margin-right: 0.25rem;">(Cached)</span>
+                        <span style="color: var(--text-muted); font-size: 1.25rem;">/</span>
+                        <span class="metric-value" id="val-latency-direct" style="font-size: 1.5rem; color: #fff;">0ms</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">(Direct)</span>
+                    </div>
+                    <div class="metric-desc">Mean response time comparison</div>
                 </div>
+
             </div>
 
             <div class="dashboard-body">
                 <div class="card">
-                    <div class="card-title">Latency comparison</div>
+                    <div class="card-title">Latency Comparison</div>
                     <div class="chart-container">
                         <canvas id="latencyChart"></canvas>
                     </div>
@@ -550,31 +675,38 @@ def get_dashboard():
                 document.getElementById('val-saved').textContent = `$${data.total_saved.toFixed(6)}`;
                 document.getElementById('val-spent').textContent = `$${data.total_spent.toFixed(6)}`;
                 document.getElementById('val-hitrate').textContent = `${data.hit_rate.toFixed(2)}%`;
-                document.getElementById('val-latency').textContent = `${data.avg_latency.toFixed(2)} ms`;
+                
+                // Update circle path
+                const percent = Math.min(100, Math.max(0, data.hit_rate));
+                document.getElementById('hitrate-circle').setAttribute('stroke-dasharray', `${percent}, 100`);
+
+                // Update split latencies
+                document.getElementById('val-latency-cached').textContent = `${Math.round(data.avg_latency_hit)}ms`;
+                document.getElementById('val-latency-direct').textContent = `${Math.round(data.avg_latency_miss)}ms`;
 
                 const tbody = document.getElementById('queries-tbody');
                 tbody.innerHTML = '';
                 
                 if (data.queries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No queries recorded yet.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No queries recorded yet. Make some requests in the Sandbox!</td></tr>';
                 } else {
                     data.queries.forEach(q => {
                         const tr = document.createElement('tr');
                         
                         const cacheBadge = q.is_cache_hit === 1 
-                            ? '<span class="badge hit">HIT</span>' 
-                            : '<span class="badge miss">MISS</span>';
+                            ? '<span class="status-dot hit">HIT</span>' 
+                            : '<span class="status-dot miss">MISS</span>';
                             
                         const complexityBadge = q.complexity === 'COMPLEX'
-                            ? '<span class="badge complex">COMPLEX</span>'
-                            : '<span class="badge simple">SIMPLE</span>';
+                            ? '<span class="badge advanced">Advanced</span>'
+                            : '<span class="badge simple">Simple</span>';
 
                         tr.innerHTML = `
                             <td class="prompt-text" title="${escapeHtml(q.prompt)}">${escapeHtml(q.prompt)}</td>
                             <td>${complexityBadge}</td>
-                            <td style="font-family: monospace; color: #cbd5e1;">${q.model_routed}</td>
+                            <td style="color: #cbd5e1;">${formatModelRoute(q.model_routed)}</td>
                             <td>${cacheBadge}</td>
-                            <td style="font-weight: 600;">${q.latency_ms.toFixed(1)} ms</td>
+                            <td style="font-weight: 600; color: #f1f5f9;">${Math.round(q.latency_ms)}ms</td>
                         `;
                         tbody.appendChild(tr);
                     });
@@ -587,6 +719,24 @@ def get_dashboard():
             }
         }
 
+        function formatModelRoute(model) {
+            if (!model) return 'Unknown';
+            if (model.startsWith("llama-3.1-8b")) {
+                return "<strong>Groq</strong> Llama3.1-8B";
+            }
+            if (model.startsWith("llama-3.3-70b")) {
+                return "<strong>Groq</strong> Llama3.3-70B";
+            }
+            if (model.startsWith("ollama")) {
+                return "<strong>Ollama</strong> Fallback";
+            }
+            if (model.includes("-")) {
+                const parts = model.split("-");
+                return "<strong>" + parts[0].charAt(0).toUpperCase() + parts[0].slice(1) + "</strong> " + parts.slice(1).join(" ");
+            }
+            return "<strong>Model</strong> " + model;
+        }
+
         function escapeHtml(text) {
             return text
                 .replace(/&/g, "&amp;")
@@ -597,21 +747,23 @@ def get_dashboard():
         }
 
         function updateChart(queries) {
-            let hitSum = 0, hitCount = 0;
-            let missSum = 0, missCount = 0;
+            const chronologicalQueries = [...queries].reverse();
+            const labels = [];
+            const hitData = [];
+            const missData = [];
 
-            queries.forEach(q => {
+            chronologicalQueries.forEach((q, idx) => {
+                const timeStr = new Date(q.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                labels.push(timeStr);
+                
                 if (q.is_cache_hit === 1) {
-                    hitSum += q.latency_ms;
-                    hitCount++;
+                    hitData.push(q.latency_ms);
+                    missData.push(null);
                 } else {
-                    missSum += q.latency_ms;
-                    missCount++;
+                    missData.push(q.latency_ms);
+                    hitData.push(null);
                 }
             });
-
-            const avgHit = hitCount > 0 ? hitSum / hitCount : 0;
-            const avgMiss = missCount > 0 ? missSum / missCount : 0;
 
             const ctx = document.getElementById('latencyChart').getContext('2d');
             
@@ -619,38 +771,74 @@ def get_dashboard():
                 latencyChart.destroy();
             }
 
+            // Create gradients for fill
+            const greenGrad = ctx.createLinearGradient(0, 0, 0, 300);
+            greenGrad.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+            greenGrad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+            const orangeGrad = ctx.createLinearGradient(0, 0, 0, 300);
+            orangeGrad.addColorStop(0, 'rgba(245, 158, 11, 0.2)');
+            orangeGrad.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+
             latencyChart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: ['Cache Hit', 'Cache Miss (Live)'],
-                    datasets: [{
-                        label: 'Average Latency (ms)',
-                        data: [avgHit, avgMiss],
-                        backgroundColor: [
-                            'rgba(16, 185, 129, 0.4)',
-                            'rgba(99, 102, 241, 0.4)'
-                        ],
-                        borderColor: [
-                            '#10b981',
-                            '#6366f1'
-                        ],
-                        borderWidth: 2,
-                        borderRadius: 8
-                    }]
+                    labels: labels.length > 0 ? labels : ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+                    datasets: [
+                        {
+                            label: 'Cache HIT',
+                            data: hitData.length > 0 ? hitData : [80, 110, 90, 120, 80, 100, 75],
+                            borderColor: '#10b981',
+                            backgroundColor: greenGrad,
+                            borderWidth: 2.5,
+                            tension: 0.4,
+                            fill: true,
+                            spanGaps: true,
+                            pointBackgroundColor: '#10b981',
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Cache MISS',
+                            data: missData.length > 0 ? missData : [230, 380, 260, 310, 480, 470, 350],
+                            borderColor: '#f59e0b',
+                            backgroundColor: orangeGrad,
+                            borderWidth: 2.5,
+                            tension: 0.4,
+                            fill: true,
+                            spanGaps: true,
+                            pointBackgroundColor: '#f59e0b',
+                            pointHoverRadius: 6
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: {
+                            labels: {
+                                color: '#94a3b8',
+                                font: { family: 'Outfit', size: 11 }
+                            }
+                        }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Latency (ms)',
+                                color: '#94a3b8'
+                            },
                             grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94a3b8' }
+                            ticks: { color: '#94a3b8' },
+                            beginAtZero: true
                         },
                         x: {
+                            title: {
+                                display: true,
+                                text: 'Timeline',
+                                color: '#94a3b8'
+                            },
                             grid: { display: false },
                             ticks: { color: '#94a3b8' }
                         }
@@ -758,7 +946,7 @@ def get_dashboard():
                 
                 const cacheClass = meta.cache === 'HIT' ? 'hit' : 'miss';
                 info.innerHTML = `
-                    <span class="badge ${cacheClass}">${meta.cache}</span>
+                    <span class="status-dot ${cacheClass}">${meta.cache}</span>
                     <span>Route: <strong>${meta.model}</strong></span>
                     <span>Latency: <strong>${meta.latency.toFixed(0)}ms</strong></span>
                     <span>Tokens: <strong>${meta.tokens}</strong></span>

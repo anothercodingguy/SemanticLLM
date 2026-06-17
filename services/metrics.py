@@ -71,8 +71,13 @@ async def record_metric(
             pipe.incrbyfloat("gateway_metric:total_cost_saved", cost_saved)
             pipe.incrbyfloat("gateway_metric:total_cost_spent", cost_spent)
             pipe.incrby("gateway_metric:total_requests", 1)
+            
             if is_cache_hit:
                 pipe.incrby("gateway_metric:cache_hits", 1)
+                pipe.incrbyfloat("gateway_metric:total_latency_hit", latency_ms)
+            else:
+                pipe.incrbyfloat("gateway_metric:total_latency_miss", latency_ms)
+                
             pipe.incrbyfloat("gateway_metric:total_latency", latency_ms)
             
             await pipe.execute()
@@ -90,11 +95,16 @@ async def get_metrics_summary() -> dict:
         total_spent = float(await client.get("gateway_metric:total_cost_spent") or 0.0)
         total_requests = int(await client.get("gateway_metric:total_requests") or 0)
         cache_hits = int(await client.get("gateway_metric:cache_hits") or 0)
-        total_latency = float(await client.get("gateway_metric:total_latency") or 0.0)
         
-        # Calculate rates
+        total_latency_hit = float(await client.get("gateway_metric:total_latency_hit") or 0.0)
+        total_latency_miss = float(await client.get("gateway_metric:total_latency_miss") or 0.0)
+        
+        # Calculations
+        cache_misses = total_requests - cache_hits
         hit_rate = (cache_hits / total_requests) * 100 if total_requests > 0 else 0.0
-        avg_latency = total_latency / total_requests if total_requests > 0 else 0.0
+        
+        avg_latency_hit = total_latency_hit / cache_hits if cache_hits > 0 else 0.0
+        avg_latency_miss = total_latency_miss / cache_misses if cache_misses > 0 else 0.0
         
         # Fetch last 20 queries from list
         raw_queries = await client.lrange("gateway_queries", 0, 19)
@@ -106,7 +116,8 @@ async def get_metrics_summary() -> dict:
             "total_requests": total_requests,
             "cache_hits": cache_hits,
             "hit_rate": hit_rate,
-            "avg_latency": avg_latency,
+            "avg_latency_hit": avg_latency_hit,
+            "avg_latency_miss": avg_latency_miss,
             "queries": queries
         }
     except Exception as e:
@@ -117,6 +128,7 @@ async def get_metrics_summary() -> dict:
             "total_requests": 0,
             "cache_hits": 0,
             "hit_rate": 0.0,
-            "avg_latency": 0.0,
+            "avg_latency_hit": 0.0,
+            "avg_latency_miss": 0.0,
             "queries": []
         }
