@@ -9,8 +9,12 @@ redis_client = None
 def get_redis_client():
     global redis_client
     if redis_client is None:
-        if settings.REDIS_URL:
-            redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+        if settings.REDIS_URL and settings.REDIS_URL.strip().lower() not in ("none", "null", ""):
+            url = settings.REDIS_URL.strip()
+            if url.startswith(("redis://", "rediss://", "unix://")):
+                redis_client = redis.from_url(url, decode_responses=True)
+            else:
+                raise ValueError(f"Redis URL must specify one of the following schemes (redis://, rediss://, unix://). Invalid URL: {url}")
         else:
             redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
     return redis_client
@@ -60,8 +64,8 @@ async def record_metric(
         "cost_spent": cost_spent
     }
 
-    client = get_redis_client()
     try:
+        client = get_redis_client()
         # Pipeline the Redis commands to execute them in a single round-trip
         async with client.pipeline(transaction=True) as pipe:
             pipe.lpush("gateway_queries", json.dumps(query_data))
@@ -88,8 +92,8 @@ async def get_metrics_summary() -> dict:
     """
     Query Redis and return a consolidated dict of metrics.
     """
-    client = get_redis_client()
     try:
+        client = get_redis_client()
         # Fetch aggregates
         total_saved = float(await client.get("gateway_metric:total_cost_saved") or 0.0)
         total_spent = float(await client.get("gateway_metric:total_cost_spent") or 0.0)
