@@ -33,6 +33,16 @@ app.add_middleware(
 # Include the router under /v1 to match OpenAI spec
 app.include_router(chat_router, prefix="/v1")
 
+@app.get("/")
+def read_root():
+    return {
+        "message": "Welcome to the Semantic LLM Gateway & Proxy",
+        "endpoints": {
+            "chat_completions": "/v1/chat/completions",
+            "health": "/health"
+        }
+    }
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
