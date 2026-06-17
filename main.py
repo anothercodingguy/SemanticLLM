@@ -30,6 +30,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Cache-Lookup"],  # Expose this custom header for CORS requests
 )
 
 # Include the router under /v1 to match OpenAI spec
@@ -702,7 +703,14 @@ def get_dashboard():
                 removeTypingIndicator(typingId);
 
                 if (!response.ok) {
-                    throw new Error(`Server returned code ${response.status}`);
+                    let errDetail = `Server returned code ${response.status}`;
+                    try {
+                        const errJson = await response.json();
+                        if (errJson && errJson.detail) {
+                            errDetail = errJson.detail;
+                        }
+                    } catch (e) {}
+                    throw new Error(errDetail);
                 }
 
                 const data = await response.json();
