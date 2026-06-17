@@ -50,14 +50,14 @@ async def get_metrics():
 @app.get("/", response_class=HTMLResponse)
 def get_dashboard():
     """
-    Serves the modern, native HTML/JS dashboard at the base URL.
+    Serves the modern, unified HTML/JS Dashboard & Chat Playground.
     """
     html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Semantic LLM Gateway Dashboard</title>
+    <title>Semantic LLM Gateway & Sandbox</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -86,7 +86,7 @@ def get_dashboard():
             background: radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 50%, #090d16 100%);
             color: var(--text-main);
             min-height: 100vh;
-            padding: 2rem;
+            padding: 2rem 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -97,7 +97,7 @@ def get_dashboard():
             max-width: 1200px;
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 1.5rem;
         }
 
         header {
@@ -105,7 +105,7 @@ def get_dashboard():
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--card-border);
-            padding-bottom: 1.5rem;
+            padding-bottom: 1rem;
         }
 
         h1 {
@@ -116,28 +116,52 @@ def get_dashboard():
             -webkit-text-fill-color: transparent;
         }
 
-        .btn-refresh {
-            background: var(--primary);
-            color: #fff;
+        /* Tabs Navigation */
+        .tabs-nav {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: none;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
+            color: var(--text-muted);
             font-family: inherit;
+            font-size: 1rem;
             font-weight: 600;
+            padding: 0.5rem 1rem;
             cursor: pointer;
+            border-radius: 8px;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 14px var(--primary-glow);
         }
 
-        .btn-refresh:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+        .tab-btn.active {
+            color: #fff;
+            background: var(--primary);
+            box-shadow: 0 4px 12px var(--primary-glow);
         }
 
+        .tab-btn:hover:not(.active) {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Analytics Tab CSS */
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .metric-card {
@@ -149,8 +173,6 @@ def get_dashboard():
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            position: relative;
-            overflow: hidden;
             transition: all 0.3s ease;
         }
 
@@ -183,7 +205,7 @@ def get_dashboard():
 
         @media (min-width: 900px) {
             .dashboard-body {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr 1.2fr;
             }
         }
 
@@ -193,6 +215,7 @@ def get_dashboard():
             backdrop-filter: blur(12px);
             border-radius: 16px;
             padding: 1.5rem;
+            height: 100%;
         }
 
         .card-title {
@@ -209,7 +232,6 @@ def get_dashboard():
             width: 100%;
         }
 
-        /* Queries Table */
         .table-container {
             max-height: 400px;
             overflow-y: auto;
@@ -272,10 +294,127 @@ def get_dashboard():
         }
 
         .prompt-text {
-            max-width: 250px;
+            max-width: 200px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        /* Chat Tab CSS */
+        .chat-layout {
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            height: 600px;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 80%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .msg-bubble {
+            padding: 0.85rem 1.25rem;
+            border-radius: 14px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .message.user .msg-bubble {
+            background: var(--primary);
+            color: #fff;
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .message.assistant .msg-bubble {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--card-border);
+        }
+
+        .msg-info {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--card-border);
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            border-radius: 8px;
+            padding: 0.85rem 1.25rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        .btn-send {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 0.85rem 1.75rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .btn-send:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-send:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         /* Scrollbar */
@@ -298,56 +437,85 @@ def get_dashboard():
     <div class="container">
         <header>
             <div>
-                <h1>Semantic LLM Gateway & Proxy</h1>
-                <p style="color: var(--text-muted); margin-top: 0.25rem;">Real-time Telemetry & Cost-Aware Routing</p>
+                <h1>Semantic LLM Gateway & Sandbox</h1>
+                <p style="color: var(--text-muted); margin-top: 0.25rem;">Cost-Aware Routing & Semantic Cache Playground</p>
             </div>
-            <button class="btn-refresh" onclick="fetchMetrics()">Refresh Data</button>
+            <div style="font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; background: var(--card-bg); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
+                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%;"></span>
+                Online (Render)
+            </div>
         </header>
 
-        <div class="metrics-grid">
-            <div class="metric-card saved">
-                <div class="metric-title">Total Cost Saved</div>
-                <div class="metric-value" id="val-saved">$0.000000</div>
-            </div>
-            <div class="metric-card spent">
-                <div class="metric-title">Total Cost Spent</div>
-                <div class="metric-value" id="val-spent">$0.000000</div>
-            </div>
-            <div class="metric-card hitrate">
-                <div class="metric-title">Cache Hit Rate</div>
-                <div class="metric-value" id="val-hitrate">0.00%</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-title">Average Latency</div>
-                <div class="metric-value" id="val-latency" style="color: #a7f3d0;">0.00 ms</div>
-            </div>
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('analytics')">Analytics & Logs</button>
+            <button class="tab-btn" onclick="switchTab('chat')">Chat Sandbox Playground</button>
         </div>
 
-        <div class="dashboard-body">
-            <div class="card">
-                <div class="card-title">Latency Comparison</div>
-                <div class="chart-container">
-                    <canvas id="latencyChart"></canvas>
+        <!-- Analytics Tab -->
+        <div id="tab-analytics" class="tab-content active">
+            <div class="metrics-grid">
+                <div class="metric-card saved">
+                    <div class="metric-title">Total Cost Saved</div>
+                    <div class="metric-value" id="val-saved">$0.000000</div>
+                </div>
+                <div class="metric-card spent">
+                    <div class="metric-title">Total Cost Spent</div>
+                    <div class="metric-value" id="val-spent">$0.000000</div>
+                </div>
+                <div class="metric-card hitrate">
+                    <div class="metric-title">Cache Hit Rate</div>
+                    <div class="metric-value" id="val-hitrate">0.00%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Average Latency</div>
+                    <div class="metric-value" id="val-latency" style="color: #a7f3d0;">0.00 ms</div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-title">Recent Queries (Last 20)</div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Prompt</th>
-                                <th>Complexity</th>
-                                <th>Model / Route</th>
-                                <th>Cache</th>
-                                <th>Latency</th>
-                            </tr>
-                        </thead>
-                        <tbody id="queries-tbody">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
+            <div class="dashboard-body">
+                <div class="card">
+                    <div class="card-title">Latency comparison</div>
+                    <div class="chart-container">
+                        <canvas id="latencyChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Query Log</div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Prompt</th>
+                                    <th>Complexity</th>
+                                    <th>Model/Route</th>
+                                    <th>Cache</th>
+                                    <th>Latency</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queries-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="tab-chat" class="tab-content">
+            <div class="chat-layout">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message assistant">
+                        <div class="msg-bubble">
+                            Hello! I am connected to the **Semantic LLM Gateway**. Send me any query to test the intent routing (SIMPLE vs COMPLEX) and semantic caching!
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Type a message to test gateway..." onkeydown="handleKey(event)" />
+                    <button class="btn-send" id="btn-send" onclick="sendMessage()">Send</button>
                 </div>
             </div>
         </div>
@@ -355,19 +523,34 @@ def get_dashboard():
 
     <script>
         let latencyChart = null;
+        let activeTab = 'analytics';
+        let chatHistory = [];
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.textContent.toLowerCase().includes(tabId));
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            if (tabId === 'analytics') {
+                fetchMetrics();
+            }
+        }
 
         async function fetchMetrics() {
             try {
                 const response = await fetch('/api/metrics');
                 const data = await response.json();
                 
-                // Update metrics values
                 document.getElementById('val-saved').textContent = `$${data.total_saved.toFixed(6)}`;
                 document.getElementById('val-spent').textContent = `$${data.total_spent.toFixed(6)}`;
                 document.getElementById('val-hitrate').textContent = `${data.hit_rate.toFixed(2)}%`;
                 document.getElementById('val-latency').textContent = `${data.avg_latency.toFixed(2)} ms`;
 
-                // Update Table
                 const tbody = document.getElementById('queries-tbody');
                 tbody.innerHTML = '';
                 
@@ -396,7 +579,6 @@ def get_dashboard():
                     });
                 }
 
-                // Update Chart
                 updateChart(data.queries);
                 
             } catch (error) {
@@ -439,7 +621,7 @@ def get_dashboard():
             latencyChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Cache Hit', 'Cache Miss (Live Groq/Ollama)'],
+                    labels: ['Cache Hit', 'Cache Miss (Live)'],
                     datasets: [{
                         label: 'Average Latency (ms)',
                         data: [avgHit, avgMiss],
@@ -476,8 +658,135 @@ def get_dashboard():
             });
         }
 
+        // Chat Sandbox Logic
+        function handleKey(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            // Clear input
+            input.value = '';
+
+            // Add user bubble
+            appendMessage('user', prompt);
+            
+            // Add typing indicator
+            const typingId = appendTypingIndicator();
+
+            chatHistory.push({ role: 'user', content: prompt });
+
+            const sendBtn = document.getElementById('btn-send');
+            const inputField = document.getElementById('chat-input');
+            sendBtn.disabled = true;
+            inputField.disabled = true;
+
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: chatHistory
+                    })
+                });
+
+                const latencyMs = performance.now() - startTime;
+                
+                removeTypingIndicator(typingId);
+
+                if (!response.ok) {
+                    throw new Error(`Server returned code ${response.status}`);
+                }
+
+                const data = await response.json();
+                const assistantMessage = data.choices[0].message.content;
+                const cacheLookup = response.headers.get('X-Cache-Lookup') || 'MISS';
+                const modelRouted = data.model;
+                const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0 };
+
+                chatHistory.push({ role: 'assistant', content: assistantMessage });
+
+                // Append response
+                appendMessage('assistant', assistantMessage, {
+                    latency: latencyMs,
+                    cache: cacheLookup,
+                    model: modelRouted,
+                    tokens: usage.prompt_tokens + usage.completion_tokens
+                });
+
+                // Refresh metrics in background
+                fetchMetrics();
+
+            } catch (error) {
+                removeTypingIndicator(typingId);
+                appendMessage('assistant', `⚠️ **Error connecting to LLM Gateway**: ${error.message}. Make sure your backend settings are configured.`);
+            } finally {
+                sendBtn.disabled = false;
+                inputField.disabled = false;
+                inputField.focus();
+            }
+        }
+
+        function appendMessage(sender, text, meta = null) {
+            const container = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.innerHTML = escapeHtml(text).replace(/\n/g, '<br/>');
+            msgDiv.appendChild(bubble);
+
+            if (meta) {
+                const info = document.createElement('div');
+                info.className = 'msg-info';
+                
+                const cacheClass = meta.cache === 'HIT' ? 'hit' : 'miss';
+                info.innerHTML = `
+                    <span class="badge ${cacheClass}">${meta.cache}</span>
+                    <span>Route: <strong>${meta.model}</strong></span>
+                    <span>Latency: <strong>${meta.latency.toFixed(0)}ms</strong></span>
+                    <span>Tokens: <strong>${meta.tokens}</strong></span>
+                `;
+                msgDiv.appendChild(info);
+            }
+
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendTypingIndicator() {
+            const container = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            const id = 'typing-' + Date.now();
+            msgDiv.className = 'message assistant';
+            msgDiv.id = id;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.innerHTML = '<span style="color: var(--text-muted);">Gateway routing query...</span>';
+            msgDiv.appendChild(bubble);
+
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeTypingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // Initial fetch
         fetchMetrics();
-        setInterval(fetchMetrics, 10000);
+        setInterval(fetchMetrics, 15000);
     </script>
 </body>
 </html>"""
