@@ -63,17 +63,16 @@ def get_dashboard():
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --primary: #6366f1;
-            --primary-glow: rgba(99, 102, 241, 0.15);
+            --bg-color: #09090b;
+            --card-bg: #18181b;
+            --card-border: #27272a;
+            --primary: #f4f4f5;
+            --primary-muted: #a1a1aa;
             --success: #10b981;
-            --success-glow: rgba(16, 185, 129, 0.15);
-            --warning: #f59e0b;
+            --warning: #d97706;
             --danger: #ef4444;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --text-main: #f4f4f5;
+            --text-muted: #71717a;
         }
 
         * {
@@ -83,8 +82,8 @@ def get_dashboard():
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background: radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 50%, #090d16 100%);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-color);
             color: var(--text-main);
             min-height: 100vh;
             padding: 2rem 1rem;
@@ -106,46 +105,46 @@ def get_dashboard():
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--card-border);
-            padding-bottom: 1rem;
+            padding-bottom: 1.5rem;
+            margin-bottom: 0.5rem;
         }
 
         h1 {
-            font-size: 2rem;
+            font-size: 1.75rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
         }
 
         /* Tabs Navigation */
         .tabs-nav {
             display: flex;
-            gap: 1rem;
+            gap: 0.5rem;
             border-bottom: 1px solid var(--card-border);
-            padding-bottom: 0.5rem;
+            padding-bottom: 0.75rem;
         }
 
         .tab-btn {
             background: none;
-            border: none;
+            border: 1px solid transparent;
             color: var(--text-muted);
             font-family: inherit;
-            font-size: 1rem;
-            font-weight: 600;
+            font-size: 0.875rem;
+            font-weight: 500;
             padding: 0.5rem 1rem;
             cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.3s ease;
+            border-radius: 6px;
+            transition: all 0.2s ease;
         }
 
         .tab-btn.active {
-            color: #fff;
+            color: #09090b;
             background: var(--primary);
-            box-shadow: 0 4px 12px var(--primary-glow);
+            border-color: var(--primary);
         }
 
         .tab-btn:hover:not(.active) {
-            color: #fff;
+            color: var(--text-main);
             background: rgba(255, 255, 255, 0.05);
         }
 
@@ -161,25 +160,24 @@ def get_dashboard():
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
+            gap: 1.25rem;
             margin-bottom: 1.5rem;
         }
 
         .metric-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            backdrop-filter: blur(12px);
-            padding: 1.5rem;
-            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
-            transition: all 0.3s ease;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
         }
 
         .metric-card:hover {
-            border-color: rgba(99, 102, 241, 0.3);
-            transform: translateY(-4px);
+            border-color: #3f3f46;
+            transform: translateY(-2px);
         }
 
         .metric-header {
@@ -189,7 +187,7 @@ def get_dashboard():
         }
 
         .metric-title {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -198,36 +196,44 @@ def get_dashboard():
 
         .metric-value-container {
             display: flex;
-            align-items: center;
+            align-items: baseline;
             justify-content: space-between;
             gap: 0.5rem;
         }
 
         .metric-value {
-            font-size: 2.15rem;
+            font-size: 2rem;
             font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.03em;
         }
-
-        .metric-card.saved .metric-value { color: var(--success); }
-        .metric-card.spent .metric-value { color: var(--warning); }
-        .metric-card.hitrate .metric-value { color: #38bdf8; }
 
         .value-trend {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
         }
-        .value-trend.green { color: var(--success); }
+
+        .value-trend.green {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
 
         .metric-desc {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
         }
 
         /* Circular Doughnut Progress */
         .circular-progress {
             position: relative;
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
         }
         .circular-progress svg {
             transform: rotate(-90deg);
@@ -236,12 +242,12 @@ def get_dashboard():
         }
         .circle-bg {
             fill: none;
-            stroke: rgba(255, 255, 255, 0.05);
+            stroke: rgba(255, 255, 255, 0.03);
             stroke-width: 4;
         }
         .circle {
             fill: none;
-            stroke: #38bdf8;
+            stroke: var(--primary-muted);
             stroke-width: 4;
             stroke-linecap: round;
             transition: stroke-dasharray 0.3s ease;
@@ -254,28 +260,28 @@ def get_dashboard():
             gap: 1.5rem;
         }
 
-        @media (min-width: 900px) {
+        @media (min-width: 1024px) {
             .dashboard-body {
-                grid-template-columns: 1.1fr 1.3fr;
+                grid-template-columns: 1.2fr 1.3fr;
             }
         }
 
         .card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            backdrop-filter: blur(12px);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
         }
 
         .card-title {
-            font-size: 1.25rem;
+            font-size: 1rem;
             font-weight: 600;
             margin-bottom: 1.5rem;
-            border-left: 4px solid var(--primary);
+            border-left: 2px solid var(--primary-muted);
             padding-left: 0.75rem;
+            color: var(--text-main);
         }
 
         .chart-container {
@@ -297,7 +303,7 @@ def get_dashboard():
         }
 
         th, td {
-            padding: 1rem 0.75rem;
+            padding: 0.85rem 0.75rem;
             border-bottom: 1px solid var(--card-border);
             font-size: 0.85rem;
         }
@@ -305,7 +311,7 @@ def get_dashboard():
         th {
             color: var(--text-muted);
             font-weight: 600;
-            background: rgba(0, 0, 0, 0.25);
+            background: var(--card-bg);
             position: sticky;
             top: 0;
             z-index: 10;
@@ -318,23 +324,23 @@ def get_dashboard():
         /* Badges & Dots */
         .badge {
             display: inline-block;
-            padding: 0.25rem 0.65rem;
-            border-radius: 99px;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: capitalize;
         }
 
         .badge.simple {
-            background: rgba(56, 189, 248, 0.12);
-            color: #38bdf8;
-            border: 1px solid rgba(56, 189, 248, 0.2);
+            background: rgba(161, 161, 170, 0.1);
+            color: #a1a1aa;
+            border: 1px solid rgba(161, 161, 170, 0.2);
         }
 
         .badge.advanced {
-            background: rgba(168, 85, 247, 0.12);
-            color: #c084fc;
-            border: 1px solid rgba(168, 85, 247, 0.2);
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.2);
         }
 
         .status-dot {
@@ -342,14 +348,14 @@ def get_dashboard():
             align-items: center;
             gap: 0.35rem;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
 
         .status-dot::before {
             content: '';
             display: inline-block;
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
         }
 
@@ -372,7 +378,7 @@ def get_dashboard():
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: #e2e8f0;
+            color: var(--text-main);
         }
 
         /* Chat Tab CSS */
@@ -381,7 +387,7 @@ def get_dashboard():
             flex-direction: column;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 12px;
             height: 600px;
             overflow: hidden;
         }
@@ -411,24 +417,34 @@ def get_dashboard():
         }
 
         .msg-bubble {
-            padding: 0.85rem 1.25rem;
-            border-radius: 14px;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
             line-height: 1.5;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .message.user .msg-bubble {
             background: var(--primary);
-            color: #fff;
-            border-bottom-right-radius: 2px;
-            box-shadow: 0 4px 12px var(--primary-glow);
+            color: #09090b;
         }
 
         .message.assistant .msg-bubble {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--bg-color);
             color: var(--text-main);
-            border-bottom-left-radius: 2px;
             border: 1px solid var(--card-border);
+        }
+
+        .message.system-message {
+            align-self: stretch;
+            max-width: 100%;
+        }
+
+        .message.system-message .msg-bubble {
+            background: transparent;
+            border: 1px dashed var(--card-border);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-align: center;
         }
 
         .msg-info {
@@ -443,68 +459,66 @@ def get_dashboard():
 
         .chat-input-area {
             display: flex;
-            gap: 1rem;
-            padding: 1.5rem;
-            background: rgba(0, 0, 0, 0.2);
+            gap: 0.75rem;
+            padding: 1.25rem;
+            background: rgba(0, 0, 0, 0.15);
             border-top: 1px solid var(--card-border);
         }
 
         .chat-input {
             flex: 1;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--bg-color);
             border: 1px solid var(--card-border);
             color: #fff;
-            border-radius: 8px;
-            padding: 0.85rem 1.25rem;
+            border-radius: 6px;
+            padding: 0.8rem 1.2rem;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             outline: none;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .chat-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px var(--primary-glow);
+            border-color: #52525b;
         }
 
         .btn-send {
             background: var(--primary);
-            color: #fff;
-            border: none;
-            padding: 0.85rem 1.75rem;
-            border-radius: 8px;
+            color: #09090b;
+            border: 1px solid var(--primary);
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
             font-family: inherit;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px var(--primary-glow);
+            transition: all 0.2s ease;
         }
 
         .btn-send:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+            background: #e4e4e7;
+            border-color: #e4e4e7;
         }
 
         .btn-send:disabled {
-            background: var(--text-muted);
+            background: #27272a;
+            border-color: #27272a;
+            color: var(--text-muted);
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
         }
 
         /* Scrollbar styling */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.05);
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
@@ -516,7 +530,7 @@ def get_dashboard():
                 <p style="color: var(--text-muted); margin-top: 0.25rem;">Cost-Aware Routing & Semantic Cache Playground</p>
             </div>
             <div style="font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; background: var(--card-bg); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
-                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; box-shadow: 0 0 8px var(--success);"></span>
+                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%;"></span>
                 Online (Render)
             </div>
         </header>
@@ -587,12 +601,16 @@ def get_dashboard():
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         </span>
                     </div>
-                    <div class="metric-value-container" style="justify-content: flex-start; gap: 0.25rem; margin: 0.25rem 0;">
-                        <span class="metric-value" id="val-latency-cached" style="font-size: 1.5rem; color: var(--success);">0ms</span>
-                        <span style="font-size:0.75rem; color:var(--text-muted); margin-right: 0.25rem;">(Cached)</span>
+                    <div class="metric-value-container" style="justify-content: flex-start; gap: 0.5rem; margin: 0.25rem 0; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 0.25rem;">
+                            <span class="metric-value" id="val-latency-cached" style="font-size: 1.5rem; color: #ffffff;">0ms</span>
+                            <span class="value-trend green" style="font-size: 0.7rem; padding: 0.1rem 0.3rem; font-weight: 600;">Cached</span>
+                        </div>
                         <span style="color: var(--text-muted); font-size: 1.25rem;">/</span>
-                        <span class="metric-value" id="val-latency-direct" style="font-size: 1.5rem; color: #fff;">0ms</span>
-                        <span style="font-size:0.75rem; color:var(--text-muted);">(Direct)</span>
+                        <div style="display: flex; align-items: center; gap: 0.25rem;">
+                            <span class="metric-value" id="val-latency-direct" style="font-size: 1.5rem; color: #ffffff;">0ms</span>
+                            <span style="font-size: 0.7rem; padding: 0.1rem 0.3rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--card-border); border-radius: 4px; font-weight: 600;">Direct</span>
+                        </div>
                     </div>
                     <div class="metric-desc">Mean response time comparison</div>
                 </div>
@@ -633,9 +651,9 @@ def get_dashboard():
         <div id="tab-chat" class="tab-content">
             <div class="chat-layout">
                 <div class="chat-messages" id="chat-messages">
-                    <div class="message assistant">
+                    <div class="message assistant system-message">
                         <div class="msg-bubble">
-                            Hello! I am connected to the **Semantic LLM Gateway**. Send me any query to test the intent routing (SIMPLE vs COMPLEX) and semantic caching!
+                            Hello! I am connected to the <strong>Semantic LLM Gateway</strong>. Send me any query to test the intent routing (SIMPLE vs COMPLEX) and semantic caching!
                         </div>
                     </div>
                 </div>
@@ -772,13 +790,13 @@ def get_dashboard():
             }
 
             // Create gradients for fill
-            const greenGrad = ctx.createLinearGradient(0, 0, 0, 300);
-            greenGrad.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
-            greenGrad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+            const indigoGrad = ctx.createLinearGradient(0, 0, 0, 300);
+            indigoGrad.addColorStop(0, 'rgba(99, 102, 241, 0.15)');
+            indigoGrad.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
 
-            const orangeGrad = ctx.createLinearGradient(0, 0, 0, 300);
-            orangeGrad.addColorStop(0, 'rgba(245, 158, 11, 0.2)');
-            orangeGrad.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+            const amberGrad = ctx.createLinearGradient(0, 0, 0, 300);
+            amberGrad.addColorStop(0, 'rgba(217, 119, 6, 0.15)');
+            amberGrad.addColorStop(1, 'rgba(217, 119, 6, 0.0)');
 
             latencyChart = new Chart(ctx, {
                 type: 'line',
@@ -788,25 +806,25 @@ def get_dashboard():
                         {
                             label: 'Cache HIT',
                             data: hitData.length > 0 ? hitData : [80, 110, 90, 120, 80, 100, 75],
-                            borderColor: '#10b981',
-                            backgroundColor: greenGrad,
-                            borderWidth: 2.5,
+                            borderColor: '#6366f1',
+                            backgroundColor: indigoGrad,
+                            borderWidth: 2,
                             tension: 0.4,
                             fill: true,
                             spanGaps: true,
-                            pointBackgroundColor: '#10b981',
+                            pointBackgroundColor: '#6366f1',
                             pointHoverRadius: 6
                         },
                         {
                             label: 'Cache MISS',
                             data: missData.length > 0 ? missData : [230, 380, 260, 310, 480, 470, 350],
-                            borderColor: '#f59e0b',
-                            backgroundColor: orangeGrad,
-                            borderWidth: 2.5,
+                            borderColor: '#d97706',
+                            backgroundColor: amberGrad,
+                            borderWidth: 2,
                             tension: 0.4,
                             fill: true,
                             spanGaps: true,
-                            pointBackgroundColor: '#f59e0b',
+                            pointBackgroundColor: '#d97706',
                             pointHoverRadius: 6
                         }
                     ]
@@ -817,7 +835,7 @@ def get_dashboard():
                     plugins: {
                         legend: {
                             labels: {
-                                color: '#94a3b8',
+                                color: '#a1a1aa',
                                 font: { family: 'Outfit', size: 11 }
                             }
                         }
@@ -827,20 +845,20 @@ def get_dashboard():
                             title: {
                                 display: true,
                                 text: 'Latency (ms)',
-                                color: '#94a3b8'
+                                color: '#71717a'
                             },
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94a3b8' },
+                            grid: { color: '#27272a' },
+                            ticks: { color: '#71717a' },
                             beginAtZero: true
                         },
                         x: {
                             title: {
                                 display: true,
                                 text: 'Timeline',
-                                color: '#94a3b8'
+                                color: '#71717a'
                             },
                             grid: { display: false },
-                            ticks: { color: '#94a3b8' }
+                            ticks: { color: '#71717a' }
                         }
                     }
                 }
