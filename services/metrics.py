@@ -19,6 +19,14 @@ def get_redis_client():
             redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
     return redis_client
 
+async def close_metrics():
+    global redis_client
+    if redis_client is not None:
+        try:
+            await redis_client.close()
+        except Exception as e:
+            print(f"Failed to close Redis client: {e}")
+
 # Groq pricing (approximate, per million tokens)
 PRICING = {
     "llama-3.1-8b-instant": {"input": 0.05, "output": 0.08},

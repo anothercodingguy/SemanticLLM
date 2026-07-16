@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from api.router import router as chat_router
-from services.cache import init_cache
-from services.metrics import get_metrics_summary
+from services.cache import init_cache, close_cache
+from services.metrics import get_metrics_summary, close_metrics
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -15,6 +15,8 @@ async def lifespan(app: FastAPI):
     # Setup Qdrant collection on startup if it doesn't exist
     await init_cache()
     yield
+    await close_cache()
+    await close_metrics()
 
 app = FastAPI(
     title="Semantic LLM Gateway",
