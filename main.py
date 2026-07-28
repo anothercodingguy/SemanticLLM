@@ -53,44 +53,44 @@ async def get_metrics():
 @app.get("/", response_class=HTMLResponse)
 def get_dashboard():
     """
-    Serves the redesigned Semantic LLM Gateway dashboard with Supercompress aesthetic.
+    Serves the redesigned Semantic LLM Gateway dashboard with true editorial aesthetic.
     """
     html_content = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Semantic LLM Gateway - Cut Your LLM API Costs</title>
+    <title>Semantic LLM Gateway</title>
     <meta name="description" content="An intelligent LLM proxy with semantic caching, cost-aware model routing, and graceful fallback.">
+    <!-- Import Google Fonts: Inter for sans-serif UI, Lora for editorial serif -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* ═══════════════════════════════════════════
-           DESIGN SYSTEM (Supercompress Light Theme)
+           DESIGN SYSTEM (True Editorial Aesthetic)
            ═══════════════════════════════════════════ */
         :root {
             --bg: rgb(251, 251, 248);
-            --surface: #ffffff;
-            --surface-hover: #f9f9f9;
-            --border: rgba(0, 0, 0, 0.08);
-            --border-hover: rgba(0, 0, 0, 0.15);
-            --text: #111111;
+            --surface-gray: #f5f5f5;
+            --border: #eaeaea;
+            --border-dark: #d4d4d4;
+            --text-primary: #111111;
             --text-secondary: #555555;
             --text-muted: #888888;
-            --accent: #111111;
-            --accent-hover: #333333;
-            --radius: 8px;
-            --radius-sm: 6px;
-            --font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            --blue: #2563eb;
+            --blue-hover: #1d4ed8;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-serif: 'Lora', Georgia, 'Times New Roman', serif;
+            --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
 
         body {
-            font-family: var(--font);
+            font-family: var(--font-sans);
             background: var(--bg);
-            color: var(--text);
+            color: var(--text-primary);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
@@ -100,22 +100,19 @@ def get_dashboard():
            NAVIGATION
            ═══════════════════════════════════════════ */
         .nav {
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
             z-index: 100;
-            background: rgba(251, 251, 248, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
         }
 
         .nav-inner {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0 1.5rem;
-            height: 60px;
+            padding: 0 2rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -124,599 +121,415 @@ def get_dashboard():
         .nav-logo {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
             text-decoration: none;
-            color: var(--text);
-            font-weight: 700;
-            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+        }
+        
+        .nav-logo-mark {
+            width: 24px;
+            height: 24px;
+            background: var(--blue);
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat center;
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat center;
+        }
+
+        .nav-logo-word {
+            font-weight: 500;
+            letter-spacing: -0.01em;
+        }
+        .nav-logo-word em {
+            font-style: italic;
+            font-family: var(--font-serif);
+            color: var(--blue);
+        }
+
+        .nav-pill-group {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            overflow: hidden;
+        }
+
+        .nav-pill-link {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 0.825rem;
+            font-weight: 500;
+            padding: 0.5rem 1.25rem;
+            border-right: 1px solid rgba(0,0,0,0.06);
+            transition: background 0.2s;
+        }
+        .nav-pill-link:last-child {
+            border-right: none;
+        }
+
+        .nav-pill-link:hover {
+            background: var(--surface-gray);
+        }
+
+        .nav-pill-solo {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            padding: 0.5rem 1.25rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 0.825rem;
+            font-weight: 500;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-pill-solo:hover {
+            background: var(--surface-gray);
+        }
+
+        /* ═══════════════════════════════════════════
+           TYPOGRAPHY & BUTTONS
+           ═══════════════════════════════════════════ */
+        h1, h2, h3 {
+            font-family: var(--font-serif);
+            font-weight: 500;
+            color: var(--text-primary);
             letter-spacing: -0.02em;
         }
 
-        .nav-logo-icon {
-            width: 24px;
-            height: 24px;
-            background: var(--text);
+        .btn-blue {
+            display: inline-block;
+            background: var(--blue);
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
             border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: #fff;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
         }
+        .btn-blue:hover { background: var(--blue-hover); }
 
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .nav-links a {
+        .btn-link {
+            display: inline-block;
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: color 0.2s;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+        }
+        .btn-link:hover { color: var(--text-primary); text-decoration: underline; }
+
+        /* ═══════════════════════════════════════════
+           SECTION 1: HERO
+           ═══════════════════════════════════════════ */
+        .section-hero {
+            padding: 5rem 2rem 4rem;
+            max-width: 900px;
+            margin: 0;
+            text-align: left;
         }
 
-        .nav-links a:hover {
-            color: var(--text);
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            line-height: 1.1;
+            margin-bottom: 1rem;
         }
 
-        .nav-badge {
-            display: inline-flex;
-            align-items: center;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text);
-            background: rgba(0,0,0,0.04);
-            border: 1px solid var(--border);
-            padding: 0.3rem 0.6rem;
-            border-radius: 20px;
+        .hero-subtitle {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 0 2.5rem 0;
         }
 
         /* ═══════════════════════════════════════════
-           HERO
+           SECTION 2: TERMINAL SPLIT
            ═══════════════════════════════════════════ */
-        .hero {
-            padding: 10rem 1.5rem 6rem;
-            max-width: 1000px;
+        .section-split {
+            max-width: 1200px;
             margin: 0 auto;
-            text-align: center;
+            padding: 4rem 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
         }
 
-        .ph-badge {
-            display: inline-block;
-            margin-bottom: 2rem;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            animation: fadeSlideUp 0.6s ease both;
+        .split-eyebrow {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--blue);
+            font-weight: 700;
+            margin-bottom: 1rem;
         }
 
-        .ph-badge img { display: block; }
-
-        .hero h1 {
-            font-size: clamp(3rem, 7vw, 5.5rem);
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            line-height: 1.05;
+        .split-title {
+            font-size: 3rem;
+            line-height: 1.1;
             margin-bottom: 1.5rem;
-            color: var(--text);
         }
 
-        .hero h1 span {
-            display: inline-block;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: wordReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes wordReveal {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .hero-lead {
-            font-size: 1.25rem;
+        .split-desc {
+            font-size: 1rem;
             color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .terminal-window {
+            background: #111111;
+            border-radius: 8px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.15);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .terminal-header {
+            background: #1c1c1e;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .terminal-dot.r { background: #ff5f56; }
+        .terminal-dot.y { background: #ffbd2e; }
+        .terminal-dot.g { background: #27c93f; }
+        
+        .terminal-title {
+            margin-left: 1rem;
+            color: #888;
+            font-size: 0.75rem;
+            font-family: var(--mono);
+        }
+
+        .terminal-body {
+            padding: 1.5rem;
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            color: #fff;
+            line-height: 1.8;
+        }
+
+        .term-check { color: #27c93f; margin-right: 0.5rem; }
+        .term-prompt { color: #888; margin-top: 1rem; }
+
+        /* ═══════════════════════════════════════════
+           SECTION 3: EDITORIAL CARDS
+           ═══════════════════════════════════════════ */
+        .section-cards {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+
+        .cards-header {
+            text-align: center;
             max-width: 700px;
             margin: 0 auto 3rem;
-            line-height: 1.6;
-            animation: fadeSlideUp 0.6s 0.8s ease both;
         }
 
-        .hero-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            animation: fadeSlideUp 0.6s 1s ease both;
-        }
-
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--text);
-            color: #fff;
-            border: none;
-            padding: 0.875rem 1.75rem;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            text-decoration: none;
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border-hover);
-            padding: 0.875rem 1.75rem;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(0,0,0,0.03);
-            border-color: var(--text);
-        }
-
-        /* ═══════════════════════════════════════════
-           SECTIONS
-           ═══════════════════════════════════════════ */
-        .section {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 5rem 1.5rem;
-            border-top: 1px solid var(--border);
-        }
-
-        .section-header {
-            max-width: 700px;
-            margin-bottom: 3.5rem;
-        }
-
-        .section-label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.75rem;
-        }
-
-        .section-title {
-            font-size: clamp(2rem, 4vw, 2.75rem);
-            font-weight: 800;
-            letter-spacing: -0.03em;
+        .cards-header h2 {
+            font-size: 2.5rem;
             margin-bottom: 1rem;
-            line-height: 1.1;
         }
 
-        .section-desc {
-            font-size: 1.125rem;
+        .cards-header p {
             color: var(--text-secondary);
-            line-height: 1.6;
         }
 
-        /* ═══════════════════════════════════════════
-           FEATURE CARDS
-           ═══════════════════════════════════════════ */
-        .features-grid {
+        .cards-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1.5rem;
         }
 
-        .feature-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
+        .ed-card {
+            background: var(--surface-gray);
             padding: 2rem;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.02);
-            transition: transform 0.3s, box-shadow 0.3s;
+            border-radius: 6px;
         }
 
-        .feature-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(0,0,0,0.06);
-            border-color: var(--border-hover);
-        }
-
-        .feature-label {
+        .ed-card-label {
             font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
+            font-weight: 600;
+            color: var(--text-secondary);
             margin-bottom: 1rem;
             display: block;
         }
 
-        .feature-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            letter-spacing: -0.01em;
+        .ed-card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-family: var(--font-sans);
         }
 
-        .feature-desc {
-            font-size: 0.95rem;
+        .ed-card p {
+            font-size: 0.9rem;
             color: var(--text-secondary);
             margin-bottom: 1.5rem;
         }
 
-        .feature-list {
+        .ed-card ul {
             list-style: none;
-        }
-
-        .feature-list li {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
-            padding: 0.25rem 0;
-            position: relative;
-            padding-left: 1.2rem;
         }
 
-        .feature-list li::before {
-            content: '\2022';
+        .ed-card ul li {
+            position: relative;
+            padding-left: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .ed-card ul li::before {
+            content: '•';
             position: absolute;
             left: 0;
-            color: var(--text);
-            font-weight: bold;
+            color: var(--text-muted);
         }
 
         /* ═══════════════════════════════════════════
-           ARCHITECTURE
+           SECTION 4: IMPACT DEMO (SPLIT)
            ═══════════════════════════════════════════ */
-        .arch-split {
+        .section-demo {
+            max-width: 1200px;
+            margin: 6rem auto;
+            padding: 0 2rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            align-items: center;
+            gap: 4rem;
         }
 
-        .arch-code {
-            background: #f4f4f0;
+        .demo-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* Left Side: Form */
+        .demo-pill-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .demo-pill {
+            border: 1px solid var(--border-dark);
+            background: #fff;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .demo-pill.active {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .demo-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            overflow-x: auto;
+            border-radius: 6px;
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            background: #fff;
+            outline: none;
         }
+        .demo-input:focus { border-color: var(--blue); }
 
-        .arch-code pre {
+        .demo-textarea {
+            width: 100%;
+            height: 180px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
             font-family: var(--mono);
             font-size: 0.85rem;
-            line-height: 1.6;
-            color: #333;
-        }
-
-        .arch-code .kw { color: #000; font-weight: 600; }
-        .arch-code .str { color: #1e3a8a; }
-        .arch-code .cmt { color: #888; }
-        .arch-code .num { color: #047857; }
-
-        /* ═══════════════════════════════════════════
-           DASHBOARD (Impact Demo)
-           ═══════════════════════════════════════════ */
-        .dash-container {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.03);
-            overflow: hidden;
-            margin-top: 2rem;
-        }
-
-        .dash-header {
-            display: flex;
-            border-bottom: 1px solid var(--border);
-            background: #fafafa;
-        }
-
-        .dash-tab {
-            padding: 1rem 1.5rem;
-            font-size: 0.9rem;
-            font-weight: 600;
             color: var(--text-secondary);
-            cursor: pointer;
-            border-right: 1px solid var(--border);
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .dash-tab.active {
-            color: var(--text);
-            border-bottom-color: var(--text);
-            background: var(--surface);
-        }
-
-        .dash-content {
-            display: none;
-            padding: 2rem;
-        }
-
-        .dash-content.active { display: block; }
-
-        /* Metrics Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .metric-block {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .metric-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-bottom: 0.25rem;
-        }
-
-        .metric-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            color: var(--text);
-            line-height: 1.1;
-        }
-        
-        .metric-sub {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 0.5rem;
-        }
-
-        .latency-split {
-            display: flex;
-            align-items: baseline;
-            gap: 0.5rem;
-            margin-top: 0.25rem;
-        }
-        .latency-split .metric-value { font-size: 1.8rem; }
-        .latency-tag { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); background: #f0f0f0; padding: 0.1rem 0.4rem; border-radius: 4px; }
-
-        /* Chart & Table */
-        .chart-wrap {
-            height: 300px;
-            margin-bottom: 2.5rem;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 1rem;
-            background: #fafafa;
-        }
-
-        .table-wrap {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.875rem;
-        }
-
-        th, td {
-            padding: 0.875rem 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        th {
-            background: #fafafa;
-            color: var(--text-secondary);
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-        }
-
-        tr:last-child td { border-bottom: none; }
-        
-        .badge {
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            background: #f0f0f0;
-            color: var(--text-secondary);
-        }
-        .badge.advanced { background: #e0e0e0; color: var(--text); }
-
-        .status-dot { font-weight: 600; }
-        .status-dot.hit { color: #047857; }
-        .status-dot.miss { color: #b45309; }
-
-        .prompt-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* ═══════════════════════════════════════════
-           CHAT SANDBOX
-           ═══════════════════════════════════════════ */
-        .chat-layout {
-            display: flex;
-            flex-direction: column;
-            height: 500px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            background: #fafafa;
-        }
-
-        .chat-messages {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
-
-        .message {
-            max-width: 80%;
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-        }
-
-        .message.user { align-self: flex-end; }
-        .message.assistant { align-self: flex-start; }
-
-        .msg-bubble {
-            padding: 1rem 1.25rem;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        .message.user .msg-bubble {
-            background: var(--text);
-            color: #fff;
-        }
-
-        .message.assistant .msg-bubble {
-            background: #fff;
-            color: var(--text);
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-
-        .msg-info {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-        }
-        .msg-info strong { color: var(--text-secondary); }
-
-        .chat-input-bar {
-            padding: 1.25rem;
-            background: #fff;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 0.875rem 1rem;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-family: var(--font);
-            font-size: 0.95rem;
+            background: var(--surface-gray);
+            resize: none;
+            margin-bottom: 1rem;
             outline: none;
-            background: #fafafa;
-            transition: border-color 0.2s;
         }
 
-        .chat-input:focus { border-color: var(--text-secondary); background: #fff; }
+        .demo-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .demo-hint { font-size: 0.8rem; color: var(--text-muted); }
 
-        .btn-send {
-            background: var(--text);
-            color: #fff;
-            border: none;
-            padding: 0 1.5rem;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-family: var(--font);
-            cursor: pointer;
-            transition: background 0.2s;
+        /* Right Side: Stats List */
+        .stats-list {
+            list-style: none;
+            margin-top: -0.5rem;
         }
 
-        .btn-send:hover { background: var(--accent-hover); }
-        .btn-send:disabled { background: #ccc; cursor: not-allowed; }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        
+        .stat-row:last-child { border-bottom: none; }
+
+        .stat-name { color: var(--text-secondary); }
+        .stat-value { font-weight: 500; color: var(--text-primary); text-align: right; }
+        
+        .stat-value.blue { color: var(--blue); }
+
+        .stat-sub { font-size: 0.7rem; color: var(--text-muted); display: block; }
 
         /* ═══════════════════════════════════════════
            FOOTER
            ═══════════════════════════════════════════ */
         .footer {
-            border-top: 1px solid var(--border);
-            padding: 4rem 1.5rem 3rem;
-            background: #ffffff;
+            background: #111111;
+            color: #ffffff;
+            padding: 4rem 2rem;
+            margin-top: 4rem;
         }
 
         .footer-inner {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1.5fr 1fr 1fr;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
             gap: 3rem;
         }
 
-        .footer-brand p {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-top: 0.75rem;
-            max-width: 300px;
-        }
-
-        .footer-logo { font-weight: 800; font-size: 1.1rem; }
-
-        .footer-col h4 {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text);
-            margin-bottom: 1rem;
-        }
-
+        .footer-brand h4 { font-family: var(--font-sans); margin-bottom: 1rem; }
+        .footer-brand p { font-size: 0.85rem; color: #888; line-height: 1.6; }
+        
+        .footer-col h5 { font-size: 0.85rem; color: #fff; margin-bottom: 1rem; font-weight: 500;}
         .footer-col ul { list-style: none; }
         .footer-col li { margin-bottom: 0.5rem; }
-        .footer-col a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-        .footer-col a:hover { color: var(--text); text-decoration: underline; }
+        .footer-col a { color: #888; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+        .footer-col a:hover { color: #fff; }
 
-        .footer-copy {
-            max-width: 1100px;
-            margin: 4rem auto 0;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border);
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* ═══════════════════════════════════════════
-           SCROLL REVEAL
-           ═══════════════════════════════════════════ */
-        .reveal {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-        .reveal.visible { opacity: 1; transform: translateY(0); }
-
+        /* Mobile */
         @media (max-width: 768px) {
-            .arch-split, .features-grid, .metrics-grid, .footer-inner { grid-template-columns: 1fr; }
-            .hero { padding-top: 8rem; }
-            .nav-links { display: none; }
+            .section-split, .cards-grid, .section-demo, .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+            .nav-pill-group { display: none; }
+            .hero-title, .split-title { font-size: 2.5rem; }
         }
     </style>
 </head>
@@ -726,202 +539,189 @@ def get_dashboard():
     <nav class="nav">
         <div class="nav-inner">
             <a href="#" class="nav-logo">
-                <div class="nav-logo-icon">S</div>
-                Semantic LLM
+                <div class="nav-logo-mark"></div>
+                <span class="nav-logo-word">Semantic<em>Gateway</em></span>
             </a>
-            <div class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#architecture">API</a>
-                <a href="#dashboard">Dashboard</a>
-                <span class="nav-badge">Online</span>
+            <div class="nav-pill-group">
+                <a href="#features" class="nav-pill-link">Guide</a>
+                <a href="#demo" class="nav-pill-link">Savings</a>
+                <a href="#demo" class="nav-pill-link">Demo</a>
+                <a href="#quickstart" class="nav-pill-link">Quick start</a>
+            </div>
+            <div style="display:flex; gap:0.75rem">
+                <a href="/docs" class="nav-pill-solo">Docs</a>
+                <a href="#dashboard" class="nav-pill-solo">Dashboard</a>
+                <a href="https://github.com/semantic-llm/gateway" target="_blank" class="nav-pill-solo" style="padding: 0.5rem;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                </a>
             </div>
         </div>
     </nav>
 
     <!-- HERO -->
-    <section class="hero" id="hero">
-        <a href="#dashboard" class="ph-badge">
-            <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1192250&theme=light" alt="Product Hunt Badge Placeholder" width="250" height="54" style="opacity:0.8" />
-        </a>
-        <h1>
-            <span style="animation-delay: 0.1s">Cut</span>
-            <span style="animation-delay: 0.2s">Your</span>
-            <span style="animation-delay: 0.3s">LLM</span>
-            <span style="animation-delay: 0.4s">API</span>
-            <span style="animation-delay: 0.5s">Costs</span>
-            <span style="animation-delay: 0.6s">by</span>
-            <span style="animation-delay: 0.7s">65%.</span>
-        </h1>
-        <p class="hero-lead">
-            For teams running chat, RAG, support, or coding agents. The Semantic LLM Gateway caches responses, routes queries by complexity, and falls back gracefully before inference, so your existing models do more with the tokens you already pay for.
+    <section class="section-hero" id="hero">
+        <div style="display:inline-flex; align-items:center; border: 1px solid #ff6154; border-radius: 6px; padding: 0.4rem 0.8rem; margin-bottom: 2rem; color: #ff6154;">
+            <div style="background:#ff6154; color:#fff; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; margin-right:0.6rem;">P</div>
+            <div style="line-height:1; padding-right:1rem; border-right:1px solid rgba(255,97,84,0.3);">
+                <div style="font-size:0.5rem; font-weight:700;">FIND US ON</div>
+                <div style="font-size:0.9rem; font-weight:700;">Product Hunt</div>
+            </div>
+            <div style="padding-left:1rem; text-align:center; line-height:1;">
+                <div style="font-size:0.6rem;">▲</div>
+                <div style="font-size:0.8rem; font-weight:700;">16</div>
+            </div>
+        </div>
+        <h1 class="hero-title">Cut Your LLM API Costs by 65%.</h1>
+        <p class="hero-subtitle">
+            For teams running chat, RAG, support, or coding agents. Semantic Gateway removes low-value context before inference, so your existing models do more with the tokens you already pay for.
         </p>
-        <div class="hero-actions">
-            <a href="#dashboard" class="btn-primary">Try on your context</a>
-            <a href="#architecture" class="btn-secondary">View the API</a>
+        <div style="display:flex; align-items:center; gap: 1rem;">
+            <a href="#quickstart" class="btn-blue">Install the agent plugin</a>
+            <a href="#demo" class="btn-link" style="margin-left:0; font-size:0.9rem; color:#888; text-decoration:none;">Try it on your context</a>
         </div>
     </section>
 
-    <!-- FEATURES -->
-    <section class="section" id="features">
-        <div class="section-header reveal">
-            <div class="section-label">Core Architecture</div>
-            <h2 class="section-title">Control AI feature cost before the model call</h2>
-            <p class="section-desc">
-                Paste the same context a production AI feature would send. The gateway intercepts it to deliver the optimal cost, latency, and resilience.
+    <!-- TERMINAL SPLIT -->
+    <section class="section-split" id="quickstart">
+        <div>
+            <div class="split-eyebrow">INTELLIGENT ROUTING · API-FIRST</div>
+            <h2 class="split-title">One endpoint.<br>Every LLM.<br>Fewer tokens.</h2>
+            <p class="split-desc">
+                Auto-detect context similarity. The gateway intercepts huge context dumps before they burn tokens, routing via Groq Llama 3 or falling back to local Ollama.
             </p>
+            <a href="/docs" class="btn-blue">Install the gateway</a>
+            <a href="#demo" class="btn-link">See how it works &#8599;</a>
         </div>
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="terminal-dot r"></div>
+                <div class="terminal-dot y"></div>
+                <div class="terminal-dot g"></div>
+                <div class="terminal-title">semantic-gateway status</div>
+            </div>
+            <div class="terminal-body">
+                <div><span class="term-check">✓</span> Detected Groq Llama-3.1-8B Instant</div>
+                <div><span class="term-check">✓</span> Detected Groq Llama-3.3-70B Versatile</div>
+                <div><span class="term-check">✓</span> Redis metrics connected</div>
+                <div><span class="term-check">✓</span> Qdrant vector store loaded</div>
+                <br>
+                <div class="term-prompt">Listening on http://localhost:8000/v1/chat/completions ▋</div>
+            </div>
+        </div>
+    </section>
 
-        <div class="features-grid reveal">
-            <article class="feature-card">
-                <span class="feature-label">Cost Model</span>
-                <h3 class="feature-title">Semantic Vector Cache</h3>
-                <p class="feature-desc">
-                    Embeds prompts into 384-dim vectors and searches for semantically similar past queries using Qdrant with cosine similarity.
-                </p>
-                <ul class="feature-list">
-                    <li>HuggingFace all-MiniLM embeddings</li>
-                    <li>Local fastembed CPU-only fallback</li>
-                    <li>Configurable 0.92 similarity threshold</li>
+    <!-- EDITORIAL CARDS -->
+    <section class="section-cards" id="features">
+        <div class="cards-header">
+            <h2>Control AI feature cost before the model call</h2>
+            <p>Paste the same context a production AI feature would send: chat history, retrieval output, support logs. The gateway optimizes it before the request reaches the model.</p>
+        </div>
+        <div class="cards-grid">
+            <article class="ed-card">
+                <span class="ed-card-label">Cost model</span>
+                <h3 class="ed-card-title">Semantic Vector Cache</h3>
+                <p>Instead of blind string matching, the gateway embeds prompts into 384-dim vectors to catch semantically similar queries.</p>
+                <ul>
+                    <li>HuggingFace embeddings (fastembed)</li>
+                    <li>Sub-100ms response on hits</li>
                 </ul>
             </article>
-
-            <article class="feature-card">
-                <span class="feature-label">Quality</span>
-                <h3 class="feature-title">Cost-Aware Routing</h3>
-                <p class="feature-desc">
-                    Prompts are classified as simple or complex via heuristics and routed to the optimal model tier on Groq.
-                </p>
-                <ul class="feature-list">
-                    <li>Simple → Llama 3.1 8B ($0.05/M)</li>
-                    <li>Complex → Llama 3.3 70B ($0.59/M)</li>
-                    <li>Per-query cost tracking in Redis</li>
+            <article class="ed-card">
+                <span class="ed-card-label">Quality</span>
+                <h3 class="ed-card-title">Complexity Routing</h3>
+                <p>Simple queries go to fast, cheap models (Llama 8B). Complex queries scale up to 70B automatically.</p>
+                <ul>
+                    <li>$0.05/M vs $0.59/M routing</li>
+                    <li>Per-query cost tracking</li>
                 </ul>
             </article>
-
-            <article class="feature-card">
-                <span class="feature-label">Deployment</span>
-                <h3 class="feature-title">Graceful Fallback</h3>
-                <p class="feature-desc">
-                    If the primary Groq API fails, the gateway automatically falls back to a local Ollama instance.
-                </p>
-                <ul class="feature-list">
-                    <li>Automatic API failover</li>
-                    <li>OpenAI-normalized responses</li>
+            <article class="ed-card">
+                <span class="ed-card-label">Deployment</span>
+                <h3 class="ed-card-title">Graceful Fallback</h3>
+                <p>Run locally or in production. If the primary Groq API fails, the gateway fails over to Ollama instantly.</p>
+                <ul>
+                    <li>OpenAI-compatible endpoints</li>
                     <li>Zero downtime for end users</li>
                 </ul>
             </article>
         </div>
     </section>
 
-    <!-- ARCHITECTURE -->
-    <section class="section" id="architecture">
-        <div class="arch-split reveal">
-            <div class="arch-text">
-                <div class="section-label">Drop-in Preprocessing</div>
-                <h2 class="section-title">OpenAI-compatible. Zero code changes.</h2>
-                <p class="section-desc" style="margin-bottom:2rem">
-                    The gateway exposes the standard <code>/v1/chat/completions</code> endpoint. Point any OpenAI SDK at this proxy and get semantic caching + intelligent routing instantly.
-                </p>
+    <!-- IMPACT DEMO (SPLIT) -->
+    <section class="section-demo" id="demo">
+        <!-- Left: Form -->
+        <div>
+            <span class="demo-label">TRY A CONSUMER APP CONTEXT</span>
+            <div class="demo-pill-group">
+                <div class="demo-pill">Long document</div>
+                <div class="demo-pill active">Tool trace</div>
+                <div class="demo-pill">Help center doc</div>
             </div>
-            <div class="arch-code">
-<pre><span class="cmt"># Standard OpenAI-format request</span>
-<span class="kw">curl</span> -X POST <span class="str">http://localhost:8000/v1/chat/completions</span> \
-  -H <span class="str">"Content-Type: application/json"</span> \
-  -d '{
-    <span class="hdr">"messages"</span>: [
-      {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Explain caching"</span>}
-    ]
-  }'
 
-<span class="cmt"># Response includes Cache header</span>
-<span class="hdr">X-Cache-Lookup</span>: <span class="str">HIT</span>
+            <span class="demo-label">USER REQUEST</span>
+            <input type="text" class="demo-input" id="chat-input" placeholder="What does fetch_user return when the row is missing?" onkeydown="handleKey(event)" />
 
-{
-  <span class="hdr">"model"</span>: <span class="str">"llama-3.1-8b-instant"</span>,
-  <span class="hdr">"choices"</span>: [{ <span class="hdr">"message"</span>: { ... } }]
-}</pre>
+            <span class="demo-label">PROMPT CONTEXT</span>
+            <textarea class="demo-textarea" readonly>[turn 0] tool: grep - searched repo for fetch_user; 14 files matched
+[turn 1] tool: grep - searched repo for fetch_user; 14 files matched
+[turn 2] tool: grep - searched repo for fetch_user; 14 files matched
+[turn 3] tool: grep - searched repo for fetch_user; 14 files matched
+[turn 4] tool: grep - searched repo for fetch_user; 14 files matched
+[turn 5] tool: grep - searched repo for fetch_user; 14 files matched</textarea>
+
+            <div class="demo-actions">
+                <button class="btn-blue" id="btn-send" onclick="sendMessage()">Compress & Route</button>
+                <span class="demo-hint">Enter in question field · ⌘/Ctrl+Enter in context</span>
             </div>
-        </div>
-    </section>
-
-    <!-- DASHBOARD & PLAYGROUND -->
-    <section class="section" id="dashboard">
-        <div class="section-header reveal" style="margin-bottom: 2rem;">
-            <div class="section-label">Live Impact Demo</div>
-            <h2 class="section-title">Estimate savings before rollout</h2>
-            <p class="section-desc">Test your queries and monitor token + inference impact in real-time.</p>
+            
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-top:1.5rem;">
+                Runs locally with the Semantic Gateway. The user request defines what matters, so duplicate history, irrelevant chunks, and noise are caught via cache or routed cheaply.
+            </p>
         </div>
 
-        <div class="dash-container reveal">
-            <div class="dash-header">
-                <div class="dash-tab active" onclick="switchTab('analytics')" id="tabbtn-analytics">Impact Dashboard</div>
-                <div class="dash-tab" onclick="switchTab('chat')" id="tabbtn-chat">Interactive Sandbox</div>
-            </div>
-
-            <!-- Analytics Tab -->
-            <div id="tab-analytics" class="dash-content active">
-                <div class="metrics-grid">
-                    <div class="metric-block">
-                        <span class="metric-label">Tokens / Cost Saved</span>
-                        <span class="metric-value" id="val-saved">$0.000</span>
-                        <span class="metric-sub">Estimated prefill savings</span>
+        <!-- Right: Stats -->
+        <div>
+            <span class="demo-label">TOKEN & INFERENCE IMPACT</span>
+            <ul class="stats-list">
+                <li class="stat-row">
+                    <span class="stat-name">Total Requests Analyzed</span>
+                    <span class="stat-value" id="val-requests">—</span>
+                </li>
+                <li class="stat-row">
+                    <span class="stat-name">Cache Hits</span>
+                    <span class="stat-value" id="val-hits">—</span>
+                </li>
+                <li class="stat-row">
+                    <span class="stat-name">Cache Efficiency</span>
+                    <span class="stat-value blue" id="val-hitrate">—</span>
+                </li>
+                <li class="stat-row">
+                    <span class="stat-name">API Spend Estimated</span>
+                    <span class="stat-value" id="val-spent">—</span>
+                </li>
+                <li class="stat-row">
+                    <span class="stat-name">API Cost Saved</span>
+                    <span class="stat-value blue" id="val-saved">—</span>
+                </li>
+                <li class="stat-row">
+                    <span class="stat-name">Latency (Direct)</span>
+                    <div style="text-align:right">
+                        <span class="stat-value" id="val-latency-direct">—</span>
+                        <span class="stat-sub">avg. upstream</span>
                     </div>
-                    <div class="metric-block">
-                        <span class="metric-label">Upstream Spend</span>
-                        <span class="metric-value" id="val-spent">$0.000</span>
-                        <span class="metric-sub">Total LLM API cost</span>
+                </li>
+                <li class="stat-row">
+                    <span class="stat-name">Latency (Cached)</span>
+                    <div style="text-align:right">
+                        <span class="stat-value blue" id="val-latency-cached">—</span>
+                        <span class="stat-sub">avg. semantic hit</span>
                     </div>
-                    <div class="metric-block">
-                        <span class="metric-label">Cache Hit Rate</span>
-                        <span class="metric-value" id="val-hitrate">0.0%</span>
-                        <span class="metric-sub">Semantic match efficiency</span>
-                    </div>
-                    <div class="metric-block">
-                        <span class="metric-label">Average Latency</span>
-                        <div class="latency-split">
-                            <span class="metric-value" id="val-latency-cached">0ms</span>
-                            <span class="latency-tag">Cached</span>
-                        </div>
-                        <span class="metric-sub">Direct latency: <span id="val-latency-direct">0ms</span></span>
-                    </div>
-                </div>
-
-                <div class="chart-wrap">
-                    <canvas id="latencyChart"></canvas>
-                </div>
-
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Prompt</th>
-                                <th>Routing</th>
-                                <th>Model Executed</th>
-                                <th>Cache</th>
-                                <th>Latency</th>
-                            </tr>
-                        </thead>
-                        <tbody id="queries-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Chat Tab -->
-            <div id="tab-chat" class="dash-content">
-                <div class="chat-layout">
-                    <div class="chat-messages" id="chat-messages">
-                        <div class="message assistant">
-                            <div class="msg-bubble">
-                                Hello. I am connected to the Semantic LLM Gateway. Enter a prompt to test routing (Simple vs Complex) and semantic caching.
-                            </div>
-                        </div>
-                    </div>
-                    <div class="chat-input-bar">
-                        <input type="text" class="chat-input" id="chat-input" placeholder="Type your context or question..." onkeydown="handleKey(event)" />
-                        <button class="btn-send" id="btn-send" onclick="sendMessage()">Compress & Send</button>
-                    </div>
-                </div>
-            </div>
+                </li>
+                <li class="stat-row">
+                    <span class="stat-name">Latest Model Route</span>
+                    <span class="stat-value" id="val-latest-route" style="font-family:var(--mono); font-size:0.8rem">—</span>
+                </li>
+            </ul>
         </div>
     </section>
 
@@ -929,211 +729,100 @@ def get_dashboard():
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-brand">
-                <div class="footer-logo">Semantic LLM</div>
-                <p>Prompt compression and intelligent routing for AI apps. Mitigate token costs before inference.</p>
+                <h4>Semantic LLM</h4>
+                <p>Prompt compression and intelligent routing for AI apps — reduce input tokens before inference.</p>
+                <p style="margin-top:1rem; color:#666">Python library · hosted API · open source</p>
             </div>
             <div class="footer-col">
-                <h4>Navigation</h4>
+                <h5>Navigation</h5>
                 <ul>
-                    <li><a href="#hero">Savings</a></li>
-                    <li><a href="#dashboard">Demo</a></li>
+                    <li><a href="#demo">Savings</a></li>
+                    <li><a href="#demo">Demo</a></li>
                     <li><a href="#features">Features</a></li>
-                    <li><a href="#architecture">Quick Start</a></li>
+                    <li><a href="#quickstart">Quick start</a></li>
                 </ul>
             </div>
             <div class="footer-col">
-                <h4>Documentation</h4>
+                <h5>Resources</h5>
                 <ul>
-                    <li><a href="/docs">API Reference</a></li>
-                    <li><a href="/v1/chat/completions">/chat/completions</a></li>
-                    <li><a href="/api/metrics">/api/metrics</a></li>
-                    <li><a href="/health">Health Check</a></li>
+                    <li><a href="/docs">Token compression guide</a></li>
+                    <li><a href="/docs">Benchmarks</a></li>
+                    <li><a href="/api/metrics">Raw Metrics API</a></li>
                 </ul>
             </div>
-        </div>
-        <div class="footer-copy">
-            &copy; Semantic LLM Gateway &middot; Open Source MIT
+            <div class="footer-col">
+                <h5>SEO Guides</h5>
+                <ul>
+                    <li><a href="/docs">Prompt compression</a></li>
+                    <li><a href="/docs">LLM token cost</a></li>
+                    <li><a href="/docs">Context limits</a></li>
+                </ul>
+            </div>
         </div>
     </footer>
 
     <!-- JAVASCRIPT -->
     <script>
-        /* Scroll Reveal */
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
-        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-        /* Tabs */
-        let latencyChart = null;
         let chatHistory = [];
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.dash-tab').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.dash-content').forEach(c => c.classList.remove('active'));
-            document.getElementById('tabbtn-' + tabId).classList.add('active');
-            document.getElementById('tab-' + tabId).classList.add('active');
-            if (tabId === 'analytics') fetchMetrics();
-        }
-
-        /* Metrics & Chart */
         async function fetchMetrics() {
             try {
                 const res = await fetch('/api/metrics');
+                if (!res.ok) return;
                 const data = await res.json();
 
-                document.getElementById('val-saved').textContent = '$' + data.total_saved.toFixed(5);
-                document.getElementById('val-spent').textContent = '$' + data.total_spent.toFixed(5);
+                document.getElementById('val-requests').textContent = data.total_requests;
+                document.getElementById('val-hits').textContent = data.cache_hits;
                 document.getElementById('val-hitrate').textContent = data.hit_rate.toFixed(1) + '%';
-                document.getElementById('val-latency-cached').textContent = Math.round(data.avg_latency_hit) + 'ms';
+                document.getElementById('val-spent').textContent = '$' + data.total_spent.toFixed(5);
+                document.getElementById('val-saved').textContent = '$' + data.total_saved.toFixed(5);
+                
                 document.getElementById('val-latency-direct').textContent = Math.round(data.avg_latency_miss) + 'ms';
+                document.getElementById('val-latency-cached').textContent = Math.round(data.avg_latency_hit) + 'ms';
 
-                const tbody = document.getElementById('queries-tbody');
-                tbody.innerHTML = '';
-
-                if (data.queries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">No queries yet.</td></tr>';
-                } else {
-                    data.queries.forEach(q => {
-                        const tr = document.createElement('tr');
-                        const cacheClass = q.is_cache_hit ? 'hit' : 'miss';
-                        const cacheText = q.is_cache_hit ? 'HIT' : 'MISS';
-                        const routeBadge = q.complexity === 'COMPLEX' ? 'advanced' : 'simple';
-                        const routeText = q.complexity === 'COMPLEX' ? 'Complex' : 'Simple';
-                        
-                        tr.innerHTML = `
-                            <td class="prompt-cell" title="${escapeHtml(q.prompt)}">${escapeHtml(q.prompt)}</td>
-                            <td><span class="badge ${routeBadge}">${routeText}</span></td>
-                            <td style="color:var(--text-secondary)">${q.model_routed}</td>
-                            <td><span class="status-dot ${cacheClass}">${cacheText}</span></td>
-                            <td style="font-weight:600">${Math.round(q.latency_ms)}ms</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+                if (data.queries && data.queries.length > 0) {
+                    const latest = data.queries[0];
+                    document.getElementById('val-latest-route').textContent = latest.model_routed + (latest.is_cache_hit ? " (CACHE)" : "");
                 }
-                updateChart(data.queries);
             } catch (err) { console.error('Metrics fetch error:', err); }
         }
 
-        function escapeHtml(t) { return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
-
-        function updateChart(queries) {
-            const chrono = [...queries].reverse();
-            const labels = [], hitData = [], missData = [];
-            chrono.forEach(q => {
-                labels.push(new Date(q.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
-                if (q.is_cache_hit) { hitData.push(q.latency_ms); missData.push(null); }
-                else { missData.push(q.latency_ms); hitData.push(null); }
-            });
-
-            const ctx = document.getElementById('latencyChart').getContext('2d');
-            if (latencyChart) latencyChart.destroy();
-
-            latencyChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels.length ? labels : ['10:00','10:10','10:20'],
-                    datasets: [
-                        { label: 'Cache HIT', data: hitData.length ? hitData : [80,90,85], borderColor: '#047857', backgroundColor: 'rgba(4,120,87,0.1)', borderWidth: 2, fill: true, spanGaps: true, tension: 0.1, pointRadius: 4 },
-                        { label: 'Cache MISS', data: missData.length ? missData : [300,450,380], borderColor: '#111111', backgroundColor: 'rgba(17,17,17,0.05)', borderWidth: 2, fill: true, spanGaps: true, tension: 0.1, pointRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { labels: { font: { family: 'system-ui' } } } },
-                    scales: {
-                        y: { title: { display: true, text: 'Latency (ms)' }, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-        }
-
-        /* Chat */
         function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
 
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const prompt = input.value.trim();
             if (!prompt) return;
+            
+            chatHistory.push({ role: 'user', content: prompt });
             input.value = '';
 
-            appendMessage('user', prompt);
-            const typingId = appendTypingIndicator();
-            chatHistory.push({ role: 'user', content: prompt });
-
-            document.getElementById('btn-send').disabled = true;
-            input.disabled = true;
-            const start = performance.now();
+            const btn = document.getElementById('btn-send');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
 
             try {
                 const res = await fetch('/v1/chat/completions', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ messages: chatHistory })
                 });
-                const latency = performance.now() - start;
-                removeTypingIndicator(typingId);
-
-                if (!res.ok) throw new Error('API Error ' + res.status);
-                const data = await res.json();
                 
-                const reply = data.choices[0].message.content;
-                chatHistory.push({ role: 'assistant', content: reply });
-                
-                appendMessage('assistant', reply, {
-                    cache: res.headers.get('X-Cache-Lookup') || 'MISS',
-                    model: data.model, latency, tokens: data.usage.total_tokens
-                });
-                fetchMetrics();
+                if (res.ok) {
+                    const data = await res.json();
+                    chatHistory.push({ role: 'assistant', content: data.choices[0].message.content });
+                    fetchMetrics();
+                }
             } catch (err) {
-                removeTypingIndicator(typingId);
-                appendMessage('assistant', 'Error: ' + err.message);
+                console.error(err);
             } finally {
-                document.getElementById('btn-send').disabled = false;
-                input.disabled = false;
+                btn.disabled = false;
+                btn.textContent = 'Compress & Route';
                 input.focus();
             }
         }
 
-        function appendMessage(sender, text, meta) {
-            const box = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = 'message ' + sender;
-            
-            const bub = document.createElement('div');
-            bub.className = 'msg-bubble';
-            bub.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
-            div.appendChild(bub);
-
-            if (meta) {
-                const info = document.createElement('div');
-                info.className = 'msg-info';
-                info.innerHTML = `<strong style="color:${meta.cache==='HIT'?'#047857':'#b45309'}">${meta.cache}</strong> &middot; ${meta.model} &middot; ${Math.round(meta.latency)}ms &middot; ${meta.tokens} tokens`;
-                div.appendChild(info);
-            }
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function appendTypingIndicator() {
-            const id = 'typ-' + Date.now();
-            const box = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = 'message assistant';
-            div.id = id;
-            div.innerHTML = '<div class="msg-bubble" style="color:var(--text-muted)">Processing...</div>';
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-            return id;
-        }
-
-        function removeTypingIndicator(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
         fetchMetrics();
-        setInterval(fetchMetrics, 15000);
+        setInterval(fetchMetrics, 5000);
     </script>
 </body>
 </html>"""
