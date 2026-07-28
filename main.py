@@ -105,7 +105,7 @@ def get_dashboard():
             z-index: 100;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(8px);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
             padding: 0.75rem 0;
         }
 
@@ -397,12 +397,50 @@ def get_dashboard():
         }
 
         /* ═══════════════════════════════════════════
-           SECTION 4: IMPACT DEMO (SPLIT)
+           SECTION 4: TABS & DASHBOARD
            ═══════════════════════════════════════════ */
         .section-demo {
             max-width: 1200px;
             margin: 6rem auto;
             padding: 0 2rem;
+        }
+
+        .dash-tab-wrap {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dash-tab {
+            padding: 0.5rem 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .dash-tab.active {
+            color: var(--blue);
+            border-bottom: 2px solid var(--blue);
+        }
+
+        .dash-content {
+            display: none;
+        }
+
+        .dash-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Split Demo Layout (Sandbox) */
+        .demo-split {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 4rem;
@@ -418,68 +456,69 @@ def get_dashboard():
             display: block;
         }
 
-        /* Left Side: Form */
-        .demo-pill-group {
+        /* Left Side: Chat UI */
+        .chat-container {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #ffffff;
             display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-        }
-        .demo-pill {
-            border: 1px solid var(--border-dark);
-            background: #fff;
-            padding: 0.4rem 1rem;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
-        .demo-pill.active {
-            border-color: var(--blue);
-            color: var(--blue);
-            background: rgba(37, 99, 235, 0.05);
+            flex-direction: column;
+            height: 450px;
         }
 
-        .demo-input {
-            width: 100%;
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+        }
+        .message.user { align-items: flex-end; }
+        .message.assistant { align-items: flex-start; }
+
+        .msg-bubble {
+            max-width: 85%;
+            padding: 0.8rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .message.user .msg-bubble {
+            background: var(--blue);
+            color: #ffffff;
+        }
+        .message.assistant .msg-bubble {
+            background: var(--surface-gray);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .chat-input-bar {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex: 1;
             padding: 0.8rem 1rem;
             border: 1px solid var(--border);
             border-radius: 6px;
             font-family: var(--font-sans);
             font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-            background: #fff;
             outline: none;
         }
-        .demo-input:focus { border-color: var(--blue); }
-
-        .demo-textarea {
-            width: 100%;
-            height: 180px;
-            padding: 1rem;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-family: var(--mono);
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            background: var(--surface-gray);
-            resize: none;
-            margin-bottom: 1rem;
-            outline: none;
-        }
-
-        .demo-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .demo-hint { font-size: 0.8rem; color: var(--text-muted); }
+        .chat-input:focus { border-color: var(--blue); }
 
         /* Right Side: Stats List */
-        .stats-list {
-            list-style: none;
-            margin-top: -0.5rem;
-        }
-
+        .stats-list { list-style: none; margin-top: -0.5rem; }
         .stat-row {
             display: flex;
             justify-content: space-between;
@@ -488,15 +527,55 @@ def get_dashboard():
             border-bottom: 1px solid var(--border);
             font-size: 0.9rem;
         }
-        
         .stat-row:last-child { border-bottom: none; }
-
         .stat-name { color: var(--text-secondary); }
         .stat-value { font-weight: 500; color: var(--text-primary); text-align: right; }
-        
         .stat-value.blue { color: var(--blue); }
-
         .stat-sub { font-size: 0.7rem; color: var(--text-muted); display: block; }
+
+        /* Analytics Tab Layout */
+        .analytics-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+
+        .chart-wrap {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #ffffff;
+            padding: 2rem;
+            height: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; }
+        .status-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .status-dot.hit { background: #10b981; }
+        .status-dot.miss { background: #ef4444; }
+        
+        .badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge.simple { background: #f1f5f9; color: #475569; }
+        .badge.advanced { background: #ede9fe; color: #7c3aed; }
 
         /* ═══════════════════════════════════════════
            FOOTER
@@ -527,7 +606,7 @@ def get_dashboard():
 
         /* Mobile */
         @media (max-width: 768px) {
-            .section-split, .cards-grid, .section-demo, .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+            .section-split, .cards-grid, .demo-split, .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
             .nav-pill-group { display: none; }
             .hero-title, .split-title { font-size: 2.5rem; }
         }
@@ -538,7 +617,7 @@ def get_dashboard():
     <!-- NAVIGATION -->
     <nav class="nav">
         <div class="nav-inner">
-            <a href="#" class="nav-logo">
+            <a href="/" class="nav-logo">
                 <div class="nav-logo-mark"></div>
                 <span class="nav-logo-word">Semantic<em>Gateway</em></span>
             </a>
@@ -550,8 +629,8 @@ def get_dashboard():
             </div>
             <div style="display:flex; gap:0.75rem">
                 <a href="/docs" class="nav-pill-solo">Docs</a>
-                <a href="#dashboard" class="nav-pill-solo">Dashboard</a>
-                <a href="https://github.com/semantic-llm/gateway" target="_blank" class="nav-pill-solo" style="padding: 0.5rem;">
+                <a href="#demo" class="nav-pill-solo">Dashboard</a>
+                <a href="https://github.com/anothercodingguy/SemanticLLM" target="_blank" class="nav-pill-solo" style="padding: 0.5rem;">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
                 </a>
             </div>
@@ -647,81 +726,108 @@ def get_dashboard():
         </div>
     </section>
 
-    <!-- IMPACT DEMO (SPLIT) -->
+    <!-- IMPACT DEMO (TABS) -->
     <section class="section-demo" id="demo">
-        <!-- Left: Form -->
-        <div>
-            <span class="demo-label">TRY A CONSUMER APP CONTEXT</span>
-            <div class="demo-pill-group">
-                <div class="demo-pill">Long document</div>
-                <div class="demo-pill active">Tool trace</div>
-                <div class="demo-pill">Help center doc</div>
-            </div>
-
-            <span class="demo-label">USER REQUEST</span>
-            <input type="text" class="demo-input" id="chat-input" placeholder="What does fetch_user return when the row is missing?" onkeydown="handleKey(event)" />
-
-            <span class="demo-label">PROMPT CONTEXT</span>
-            <textarea class="demo-textarea" readonly>[turn 0] tool: grep - searched repo for fetch_user; 14 files matched
-[turn 1] tool: grep - searched repo for fetch_user; 14 files matched
-[turn 2] tool: grep - searched repo for fetch_user; 14 files matched
-[turn 3] tool: grep - searched repo for fetch_user; 14 files matched
-[turn 4] tool: grep - searched repo for fetch_user; 14 files matched
-[turn 5] tool: grep - searched repo for fetch_user; 14 files matched</textarea>
-
-            <div class="demo-actions">
-                <button class="btn-blue" id="btn-send" onclick="sendMessage()">Compress & Route</button>
-                <span class="demo-hint">Enter in question field · ⌘/Ctrl+Enter in context</span>
-            </div>
-            
-            <p style="font-size:0.8rem; color:var(--text-muted); margin-top:1.5rem;">
-                Runs locally with the Semantic Gateway. The user request defines what matters, so duplicate history, irrelevant chunks, and noise are caught via cache or routed cheaply.
-            </p>
+        <div class="dash-tab-wrap">
+            <div class="dash-tab active" id="tabbtn-sandbox" onclick="switchTab('sandbox')">Interactive Sandbox</div>
+            <div class="dash-tab" id="tabbtn-analytics" onclick="switchTab('analytics')">Impact Dashboard</div>
         </div>
 
-        <!-- Right: Stats -->
-        <div>
-            <span class="demo-label">TOKEN & INFERENCE IMPACT</span>
-            <ul class="stats-list">
-                <li class="stat-row">
-                    <span class="stat-name">Total Requests Analyzed</span>
-                    <span class="stat-value" id="val-requests">—</span>
-                </li>
-                <li class="stat-row">
-                    <span class="stat-name">Cache Hits</span>
-                    <span class="stat-value" id="val-hits">—</span>
-                </li>
-                <li class="stat-row">
-                    <span class="stat-name">Cache Efficiency</span>
-                    <span class="stat-value blue" id="val-hitrate">—</span>
-                </li>
-                <li class="stat-row">
-                    <span class="stat-name">API Spend Estimated</span>
-                    <span class="stat-value" id="val-spent">—</span>
-                </li>
-                <li class="stat-row">
-                    <span class="stat-name">API Cost Saved</span>
-                    <span class="stat-value blue" id="val-saved">—</span>
-                </li>
-                <li class="stat-row">
-                    <span class="stat-name">Latency (Direct)</span>
-                    <div style="text-align:right">
-                        <span class="stat-value" id="val-latency-direct">—</span>
-                        <span class="stat-sub">avg. upstream</span>
+        <!-- Tab 1: Interactive Sandbox (Split) -->
+        <div id="tab-sandbox" class="dash-content active">
+            <div class="demo-split">
+                <!-- Left: Form -->
+                <div>
+                    <span class="demo-label">USER REQUEST</span>
+                    
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="message assistant">
+                                <div class="msg-bubble">
+                                    Hello. I am connected to the Semantic LLM Gateway. Enter a prompt to test routing (Simple vs Complex) and semantic caching.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-input-bar">
+                            <input type="text" class="chat-input" id="chat-input" placeholder="What does fetch_user return when the row is missing?" onkeydown="handleKey(event)" />
+                            <button class="btn-blue" id="btn-send" onclick="sendMessage()">Compress</button>
+                        </div>
                     </div>
-                </li>
-                <li class="stat-row">
-                    <span class="stat-name">Latency (Cached)</span>
-                    <div style="text-align:right">
-                        <span class="stat-value blue" id="val-latency-cached">—</span>
-                        <span class="stat-sub">avg. semantic hit</span>
-                    </div>
-                </li>
-                <li class="stat-row">
-                    <span class="stat-name">Latest Model Route</span>
-                    <span class="stat-value" id="val-latest-route" style="font-family:var(--mono); font-size:0.8rem">—</span>
-                </li>
-            </ul>
+                    
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-top:1.5rem;">
+                        Runs locally with the Semantic Gateway. The user request defines what matters, so duplicate history, irrelevant chunks, and noise are caught via cache or routed cheaply.
+                    </p>
+                </div>
+
+                <!-- Right: Stats -->
+                <div>
+                    <span class="demo-label">TOKEN & INFERENCE IMPACT</span>
+                    <ul class="stats-list">
+                        <li class="stat-row">
+                            <span class="stat-name">Total Requests Analyzed</span>
+                            <span class="stat-value" id="val-requests">—</span>
+                        </li>
+                        <li class="stat-row">
+                            <span class="stat-name">Cache Hits</span>
+                            <span class="stat-value" id="val-hits">—</span>
+                        </li>
+                        <li class="stat-row">
+                            <span class="stat-name">Cache Efficiency</span>
+                            <span class="stat-value blue" id="val-hitrate">—</span>
+                        </li>
+                        <li class="stat-row">
+                            <span class="stat-name">API Spend Estimated</span>
+                            <span class="stat-value" id="val-spent">—</span>
+                        </li>
+                        <li class="stat-row">
+                            <span class="stat-name">API Cost Saved</span>
+                            <span class="stat-value blue" id="val-saved">—</span>
+                        </li>
+                        <li class="stat-row">
+                            <span class="stat-name">Latency (Direct)</span>
+                            <div style="text-align:right">
+                                <span class="stat-value" id="val-latency-direct">—</span>
+                                <span class="stat-sub">avg. upstream</span>
+                            </div>
+                        </li>
+                        <li class="stat-row">
+                            <span class="stat-name">Latency (Cached)</span>
+                            <div style="text-align:right">
+                                <span class="stat-value blue" id="val-latency-cached">—</span>
+                                <span class="stat-sub">avg. semantic hit</span>
+                            </div>
+                        </li>
+                        <li class="stat-row">
+                            <span class="stat-name">Latest Model Route</span>
+                            <span class="stat-value" id="val-latest-route" style="font-family:var(--mono); font-size:0.8rem">—</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Analytics -->
+        <div id="tab-analytics" class="dash-content">
+            <div class="analytics-layout">
+                <div class="chart-wrap">
+                    <canvas id="latencyChart"></canvas>
+                </div>
+                
+                <div style="background:#fff; border: 1px solid var(--border); border-radius:6px; overflow:hidden;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prompt</th>
+                                <th>Routing</th>
+                                <th>Model Executed</th>
+                                <th>Cache</th>
+                                <th>Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queries-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -764,6 +870,73 @@ def get_dashboard():
     <!-- JAVASCRIPT -->
     <script>
         let chatHistory = [];
+        let latencyChart = null;
+
+        function escapeHtml(unsafe) {
+            return (unsafe || '').toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.dash-tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.dash-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('tabbtn-' + tabId).classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+            if(tabId === 'analytics') fetchMetrics();
+        }
+
+        function updateChart(queries) {
+            const chrono = [...queries].reverse();
+            const labels = [], hitData = [], missData = [];
+            chrono.forEach(q => {
+                labels.push(new Date(q.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+                if (q.is_cache_hit) { hitData.push(q.latency_ms); missData.push(null); }
+                else { missData.push(q.latency_ms); hitData.push(null); }
+            });
+
+            const ctx = document.getElementById('latencyChart').getContext('2d');
+            if (latencyChart) latencyChart.destroy();
+            
+            latencyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Cache Hit Latency (ms)',
+                            data: hitData,
+                            borderColor: '#2563eb',
+                            backgroundColor: '#2563eb',
+                            pointRadius: 5,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Upstream Miss Latency (ms)',
+                            data: missData,
+                            borderColor: '#ef4444',
+                            backgroundColor: '#ef4444',
+                            pointRadius: 5,
+                            spanGaps: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 10, font: { family: 'Inter' } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
 
         async function fetchMetrics() {
             try {
@@ -783,11 +956,40 @@ def get_dashboard():
                 if (data.queries && data.queries.length > 0) {
                     const latest = data.queries[0];
                     document.getElementById('val-latest-route').textContent = latest.model_routed + (latest.is_cache_hit ? " (CACHE)" : "");
+                    
+                    // Update table
+                    const tbody = document.getElementById('queries-tbody');
+                    tbody.innerHTML = '';
+                    data.queries.forEach(q => {
+                        const tr = document.createElement('tr');
+                        const routeBadge = q.complexity === 'COMPLEX' ? 'advanced' : 'simple';
+                        const cacheClass = q.is_cache_hit ? 'hit' : 'miss';
+                        const cacheText = q.is_cache_hit ? 'Hit' : 'Miss';
+                        tr.innerHTML = `
+                            <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(q.prompt)}">${escapeHtml(q.prompt)}</td>
+                            <td><span class="badge ${routeBadge}">${escapeHtml(q.complexity)}</span></td>
+                            <td style="color:var(--text-secondary)">${escapeHtml(q.model_routed)}</td>
+                            <td><span class="status-dot ${cacheClass}"></span>${cacheText}</td>
+                            <td style="font-weight:500">${Math.round(q.latency_ms)}ms</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    
+                    updateChart(data.queries);
                 }
             } catch (err) { console.error('Metrics fetch error:', err); }
         }
 
         function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
+        
+        function appendMessage(role, text) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = 'message ' + role;
+            div.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
 
         async function sendMessage() {
             const input = document.getElementById('chat-input');
@@ -795,6 +997,7 @@ def get_dashboard():
             if (!prompt) return;
             
             chatHistory.push({ role: 'user', content: prompt });
+            appendMessage('user', prompt);
             input.value = '';
 
             const btn = document.getElementById('btn-send');
@@ -809,14 +1012,19 @@ def get_dashboard():
                 
                 if (res.ok) {
                     const data = await res.json();
-                    chatHistory.push({ role: 'assistant', content: data.choices[0].message.content });
+                    const reply = data.choices[0].message.content;
+                    chatHistory.push({ role: 'assistant', content: reply });
+                    appendMessage('assistant', reply);
                     fetchMetrics();
+                } else {
+                    appendMessage('assistant', "Error communicating with Gateway.");
                 }
             } catch (err) {
                 console.error(err);
+                appendMessage('assistant', "Network Error.");
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Compress & Route';
+                btn.textContent = 'Compress';
                 input.focus();
             }
         }
