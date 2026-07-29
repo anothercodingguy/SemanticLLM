@@ -978,6 +978,9 @@ def get_dashboard():
                     });
                     
                     updateChart(data.queries);
+                } else {
+                    document.getElementById('queries-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888; padding:2rem;">No queries recorded yet. Send a prompt in the Sandbox!</td></tr>';
+                    updateChart([]);
                 }
             } catch (err) { console.error('Metrics fetch error:', err); }
         }
