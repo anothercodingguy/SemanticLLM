@@ -195,26 +195,29 @@ def get_dashboard():
            TYPOGRAPHY & BUTTONS
            ═══════════════════════════════════════════ */
         h1, h2, h3 {
-            font-family: var(--font-serif);
-            font-weight: 500;
+            font-family: var(--font-sans);
+            font-weight: 600;
             color: var(--text-primary);
-            letter-spacing: -0.02em;
+            letter-spacing: -0.03em;
         }
 
         .btn-blue {
-            display: inline-block;
-            background: var(--blue);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #111111;
             color: #ffffff;
             text-decoration: none;
             font-size: 0.95rem;
             font-weight: 500;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            transition: background 0.2s;
-            border: none;
+            padding: 0.8rem 1.75rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 14px 0 rgba(0,0,0,0.1);
             cursor: pointer;
         }
-        .btn-blue:hover { background: var(--blue-hover); }
+        .btn-blue:hover { background: #333333; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
 
         .btn-link {
             display: inline-block;
@@ -229,23 +232,26 @@ def get_dashboard():
            SECTION 1: HERO
            ═══════════════════════════════════════════ */
         .section-hero {
-            padding: 5rem 2rem 4rem;
-            max-width: 900px;
+            padding: 8rem 2rem 6rem;
+            max-width: 1000px;
             margin: 0;
             text-align: left;
         }
 
         .hero-title {
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            line-height: 1.1;
-            margin-bottom: 1rem;
+            font-size: clamp(3rem, 7vw, 4.8rem);
+            line-height: 1.05;
+            font-weight: 600;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.5rem;
         }
 
         .hero-subtitle {
-            font-size: 1.05rem;
+            font-size: 1.15rem;
+            line-height: 1.6;
             color: var(--text-secondary);
             max-width: 700px;
-            margin: 0 0 2.5rem 0;
+            margin: 0 0 3rem 0;
         }
 
         /* ═══════════════════════════════════════════
@@ -429,12 +435,19 @@ def get_dashboard():
         }
 
         .dash-content {
-            display: none;
+            visibility: hidden;
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            width: 100%;
         }
 
         .dash-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
+            visibility: visible;
+            position: relative;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -639,24 +652,13 @@ def get_dashboard():
 
     <!-- HERO -->
     <section class="section-hero" id="hero">
-        <div style="display:inline-flex; align-items:center; border: 1px solid #ff6154; border-radius: 6px; padding: 0.4rem 0.8rem; margin-bottom: 2rem; color: #ff6154;">
-            <div style="background:#ff6154; color:#fff; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; margin-right:0.6rem;">P</div>
-            <div style="line-height:1; padding-right:1rem; border-right:1px solid rgba(255,97,84,0.3);">
-                <div style="font-size:0.5rem; font-weight:700;">FIND US ON</div>
-                <div style="font-size:0.9rem; font-weight:700;">Product Hunt</div>
-            </div>
-            <div style="padding-left:1rem; text-align:center; line-height:1;">
-                <div style="font-size:0.6rem;">▲</div>
-                <div style="font-size:0.8rem; font-weight:700;">16</div>
-            </div>
-        </div>
         <h1 class="hero-title">Cut Your LLM API Costs by 65%.</h1>
         <p class="hero-subtitle">
             For teams running chat, RAG, support, or coding agents. Semantic Gateway removes low-value context before inference, so your existing models do more with the tokens you already pay for.
         </p>
         <div style="display:flex; align-items:center; gap: 1rem;">
             <a href="#quickstart" class="btn-blue">Install the agent plugin</a>
-            <a href="#demo" class="btn-link" style="margin-left:0; font-size:0.9rem; color:#888; text-decoration:none;">Try it on your context</a>
+            <a href="#demo" class="btn-link" style="margin-left:0; font-size:0.9rem; color:#888; text-decoration:none;">Try it on your context ↗</a>
         </div>
     </section>
 
