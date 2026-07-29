@@ -86,27 +86,31 @@ async def record_metric(
 
     try:
         client = get_redis_client()
+        redis_success = False
+        
         if client:
-            # Pipeline the Redis commands to execute them in a single round-trip
-            async with client.pipeline(transaction=True) as pipe:
-                pipe.lpush("gateway_queries", json.dumps(query_data))
-                pipe.ltrim("gateway_queries", 0, 99)  # Keep the last 100 queries
-                
-                # Global aggregates
-                pipe.incrbyfloat("gateway_metric:total_cost_saved", cost_saved)
-                pipe.incrbyfloat("gateway_metric:total_cost_spent", cost_spent)
-                pipe.incrby("gateway_metric:total_requests", 1)
-                
-                if is_cache_hit:
-                    pipe.incrby("gateway_metric:cache_hits", 1)
-                    pipe.incrbyfloat("gateway_metric:total_latency_hit", latency_ms)
-                else:
-                    pipe.incrbyfloat("gateway_metric:total_latency_miss", latency_ms)
+            try:
+                # Pipeline the Redis commands to execute them in a single round-trip
+                async with client.pipeline(transaction=True) as pipe:
+                    pipe.lpush("gateway_queries", json.dumps(query_data))
+                    pipe.ltrim("gateway_queries", 0, 99)
+                    pipe.incrbyfloat("gateway_metric:total_cost_saved", cost_saved)
+                    pipe.incrbyfloat("gateway_metric:total_cost_spent", cost_spent)
+                    pipe.incrby("gateway_metric:total_requests", 1)
                     
-                pipe.incrbyfloat("gateway_metric:total_latency", latency_ms)
+                    if is_cache_hit:
+                        pipe.incrby("gateway_metric:cache_hits", 1)
+                        pipe.incrbyfloat("gateway_metric:total_latency_hit", latency_ms)
+                    else:
+                        pipe.incrbyfloat("gateway_metric:total_latency_miss", latency_ms)
+                        
+                    pipe.incrbyfloat("gateway_metric:total_latency", latency_ms)
+                    await pipe.execute()
+                redis_success = True
+            except Exception as e:
+                print(f"Redis connection failed ({e}), falling back to in-memory metrics.")
                 
-                await pipe.execute()
-        else:
+        if not redis_success:
             # Use in-memory fallback
             _in_memory_metrics["queries"].insert(0, query_data)
             _in_memory_metrics["queries"] = _in_memory_metrics["queries"][:100]
@@ -129,21 +133,24 @@ async def get_metrics_summary() -> dict:
     """
     try:
         client = get_redis_client()
+        redis_success = False
         
         if client:
-            # Fetch aggregates
-            total_saved = float(await client.get("gateway_metric:total_cost_saved") or 0.0)
-            total_spent = float(await client.get("gateway_metric:total_cost_spent") or 0.0)
-            total_requests = int(await client.get("gateway_metric:total_requests") or 0)
-            cache_hits = int(await client.get("gateway_metric:cache_hits") or 0)
-            
-            total_latency_hit = float(await client.get("gateway_metric:total_latency_hit") or 0.0)
-            total_latency_miss = float(await client.get("gateway_metric:total_latency_miss") or 0.0)
-            
-            # Fetch last 20 queries from list
-            raw_queries = await client.lrange("gateway_queries", 0, 19)
-            queries = [json.loads(q) for q in raw_queries]
-        else:
+            try:
+                # Fetch aggregates
+                total_saved = float(await client.get("gateway_metric:total_cost_saved") or 0.0)
+                total_spent = float(await client.get("gateway_metric:total_cost_spent") or 0.0)
+                total_requests = int(await client.get("gateway_metric:total_requests") or 0)
+                cache_hits = int(await client.get("gateway_metric:cache_hits") or 0)
+                total_latency_hit = float(await client.get("gateway_metric:total_latency_hit") or 0.0)
+                total_latency_miss = float(await client.get("gateway_metric:total_latency_miss") or 0.0)
+                raw_queries = await client.lrange("gateway_queries", 0, 19)
+                queries = [json.loads(q) for q in raw_queries]
+                redis_success = True
+            except Exception as e:
+                print(f"Redis connection failed ({e}), falling back to in-memory summary.")
+                
+        if not redis_success:
             # Fetch from in-memory fallback
             total_saved = _in_memory_metrics["total_saved"]
             total_spent = _in_memory_metrics["total_spent"]
