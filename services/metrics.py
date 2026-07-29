@@ -1,12 +1,12 @@
-import redis.asyncio as redis
 import json
+import logging
 from datetime import datetime
 from typing import Optional
 from core.config import settings
 
-redis_client = None
+logger = logging.getLogger(__name__)
 
-# In-memory fallback if Redis is not configured
+# ── In-memory metrics store (always available) ──────────────────────────
 _in_memory_metrics = {
     "total_saved": 0.0,
     "total_spent": 0.0,
@@ -17,33 +17,64 @@ _in_memory_metrics = {
     "queries": []
 }
 
-def get_redis_client():
-    global redis_client
-    if redis_client is None:
-        if settings.REDIS_URL and settings.REDIS_URL.strip().lower() not in ("none", "null", ""):
-            url = settings.REDIS_URL.strip()
-            if url.startswith(("redis://", "rediss://", "unix://")):
-                redis_client = redis.from_url(url, decode_responses=True)
-            else:
-                raise ValueError(f"Redis URL must specify one of the following schemes (redis://, rediss://, unix://). Invalid URL: {url}")
-        else:
-            # If no URL is provided, we return None and use the in-memory fallback
+# ── Redis client (lazy, optional) ───────────────────────────────────────
+_redis_client = None
+_redis_available = None  # None = not tested yet, True/False after first check
+
+
+def _try_get_redis_client():
+    """
+    Attempt to build a Redis client from REDIS_URL.
+    Returns the client object or None. Never raises.
+    """
+    global _redis_client, _redis_available
+
+    # Once we know Redis is unavailable, stop retrying
+    if _redis_available is False:
+        return None
+
+    if _redis_client is not None:
+        return _redis_client
+
+    try:
+        url = (settings.REDIS_URL or "").strip()
+        if not url or url.lower() in ("none", "null"):
+            logger.info("REDIS_URL not configured — using in-memory metrics.")
+            _redis_available = False
             return None
-    return redis_client
+
+        if not url.startswith(("redis://", "rediss://", "unix://")):
+            logger.warning(f"REDIS_URL has invalid scheme — using in-memory metrics. URL: {url[:30]}…")
+            _redis_available = False
+            return None
+
+        import redis.asyncio as aioredis
+        _redis_client = aioredis.from_url(url, decode_responses=True)
+        _redis_available = True
+        logger.info("Redis client created successfully.")
+        return _redis_client
+
+    except Exception as e:
+        logger.warning(f"Failed to create Redis client ({e}) — using in-memory metrics.")
+        _redis_available = False
+        return None
+
 
 async def close_metrics():
-    global redis_client
-    if redis_client is not None:
+    global _redis_client
+    if _redis_client is not None:
         try:
-            await redis_client.close()
-        except Exception as e:
-            print(f"Failed to close Redis client: {e}")
+            await _redis_client.close()
+        except Exception:
+            pass
 
-# Groq pricing (approximate, per million tokens)
+
+# ── Cost calculation ────────────────────────────────────────────────────
 PRICING = {
     "llama-3.1-8b-instant": {"input": 0.05, "output": 0.08},
     "llama-3.3-70b-versatile": {"input": 0.59, "output": 0.79},
 }
+
 
 def calculate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     if model not in PRICING:
@@ -52,6 +83,8 @@ def calculate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> fl
     output_cost = (completion_tokens / 1_000_000) * PRICING[model]["output"]
     return input_cost + output_cost
 
+
+# ── Record a metric ────────────────────────────────────────────────────
 async def record_metric(
     prompt: str,
     complexity: str,
@@ -61,15 +94,9 @@ async def record_metric(
     prompt_tokens: int = 0,
     completion_tokens: int = 0
 ):
-    cost_spent = 0.0
-    cost_saved = 0.0
-    
     cost = calculate_cost(model_routed, prompt_tokens, completion_tokens)
-    
-    if is_cache_hit:
-        cost_saved = cost
-    else:
-        cost_spent = cost
+    cost_saved = cost if is_cache_hit else 0.0
+    cost_spent = 0.0 if is_cache_hit else cost
 
     query_data = {
         "timestamp": datetime.utcnow().isoformat(),
@@ -84,108 +111,93 @@ async def record_metric(
         "cost_spent": cost_spent
     }
 
-    try:
-        client = get_redis_client()
-        redis_success = False
-        
-        if client:
-            try:
-                # Pipeline the Redis commands to execute them in a single round-trip
-                async with client.pipeline(transaction=True) as pipe:
-                    pipe.lpush("gateway_queries", json.dumps(query_data))
-                    pipe.ltrim("gateway_queries", 0, 99)
-                    pipe.incrbyfloat("gateway_metric:total_cost_saved", cost_saved)
-                    pipe.incrbyfloat("gateway_metric:total_cost_spent", cost_spent)
-                    pipe.incrby("gateway_metric:total_requests", 1)
-                    
-                    if is_cache_hit:
-                        pipe.incrby("gateway_metric:cache_hits", 1)
-                        pipe.incrbyfloat("gateway_metric:total_latency_hit", latency_ms)
-                    else:
-                        pipe.incrbyfloat("gateway_metric:total_latency_miss", latency_ms)
-                        
-                    pipe.incrbyfloat("gateway_metric:total_latency", latency_ms)
-                    await pipe.execute()
-                redis_success = True
-            except Exception as e:
-                print(f"Redis connection failed ({e}), falling back to in-memory metrics.")
-                
-        if not redis_success:
-            # Use in-memory fallback
-            _in_memory_metrics["queries"].insert(0, query_data)
-            _in_memory_metrics["queries"] = _in_memory_metrics["queries"][:100]
-            
-            _in_memory_metrics["total_saved"] += cost_saved
-            _in_memory_metrics["total_spent"] += cost_spent
-            _in_memory_metrics["total_requests"] += 1
-            if is_cache_hit:
-                _in_memory_metrics["cache_hits"] += 1
-                _in_memory_metrics["total_latency_hit"] += latency_ms
-            else:
-                _in_memory_metrics["total_latency_miss"] += latency_ms
+    # Always write to in-memory first (guaranteed to work)
+    _in_memory_metrics["queries"].insert(0, query_data)
+    _in_memory_metrics["queries"] = _in_memory_metrics["queries"][:100]
+    _in_memory_metrics["total_saved"] += cost_saved
+    _in_memory_metrics["total_spent"] += cost_spent
+    _in_memory_metrics["total_requests"] += 1
+    if is_cache_hit:
+        _in_memory_metrics["cache_hits"] += 1
+        _in_memory_metrics["total_latency_hit"] += latency_ms
+    else:
+        _in_memory_metrics["total_latency_miss"] += latency_ms
 
-    except Exception as e:
-        print(f"Failed to record metrics: {e}")
+    # Then try Redis as a durable backup (optional)
+    client = _try_get_redis_client()
+    if client:
+        try:
+            async with client.pipeline(transaction=True) as pipe:
+                pipe.lpush("gateway_queries", json.dumps(query_data))
+                pipe.ltrim("gateway_queries", 0, 99)
+                pipe.incrbyfloat("gateway_metric:total_cost_saved", cost_saved)
+                pipe.incrbyfloat("gateway_metric:total_cost_spent", cost_spent)
+                pipe.incrby("gateway_metric:total_requests", 1)
+                if is_cache_hit:
+                    pipe.incrby("gateway_metric:cache_hits", 1)
+                    pipe.incrbyfloat("gateway_metric:total_latency_hit", latency_ms)
+                else:
+                    pipe.incrbyfloat("gateway_metric:total_latency_miss", latency_ms)
+                pipe.incrbyfloat("gateway_metric:total_latency", latency_ms)
+                await pipe.execute()
+        except Exception as e:
+            global _redis_available
+            _redis_available = False
+            logger.warning(f"Redis write failed ({e}) — metrics saved in-memory only.")
 
+
+# ── Read metrics summary ───────────────────────────────────────────────
 async def get_metrics_summary() -> dict:
-    """
-    Query Redis (or fallback) and return a consolidated dict of metrics.
-    """
-    try:
-        client = get_redis_client()
-        redis_success = False
-        
-        if client:
-            try:
-                # Fetch aggregates
-                total_saved = float(await client.get("gateway_metric:total_cost_saved") or 0.0)
-                total_spent = float(await client.get("gateway_metric:total_cost_spent") or 0.0)
-                total_requests = int(await client.get("gateway_metric:total_requests") or 0)
-                cache_hits = int(await client.get("gateway_metric:cache_hits") or 0)
-                total_latency_hit = float(await client.get("gateway_metric:total_latency_hit") or 0.0)
-                total_latency_miss = float(await client.get("gateway_metric:total_latency_miss") or 0.0)
-                raw_queries = await client.lrange("gateway_queries", 0, 19)
-                queries = [json.loads(q) for q in raw_queries]
-                redis_success = True
-            except Exception as e:
-                print(f"Redis connection failed ({e}), falling back to in-memory summary.")
-                
-        if not redis_success:
-            # Fetch from in-memory fallback
-            total_saved = _in_memory_metrics["total_saved"]
-            total_spent = _in_memory_metrics["total_spent"]
-            total_requests = _in_memory_metrics["total_requests"]
-            cache_hits = _in_memory_metrics["cache_hits"]
-            total_latency_hit = _in_memory_metrics["total_latency_hit"]
-            total_latency_miss = _in_memory_metrics["total_latency_miss"]
-            queries = _in_memory_metrics["queries"][:20]
+    """Return metrics from Redis if available, otherwise from in-memory store."""
 
-        # Calculations
-        cache_misses = total_requests - cache_hits
-        hit_rate = (cache_hits / total_requests) * 100 if total_requests > 0 else 0.0
-        
-        avg_latency_hit = total_latency_hit / cache_hits if cache_hits > 0 else 0.0
-        avg_latency_miss = total_latency_miss / cache_misses if cache_misses > 0 else 0.0
-        
-        return {
-            "total_saved": total_saved,
-            "total_spent": total_spent,
-            "total_requests": total_requests,
-            "cache_hits": cache_hits,
-            "hit_rate": hit_rate,
-            "avg_latency_hit": avg_latency_hit,
-            "avg_latency_miss": avg_latency_miss,
-            "queries": queries
-        }
-    except Exception as e:
-        print(f"Failed to fetch metrics summary: {e}")
-        return {
-            "total_saved": 0.0,
-            "total_spent": 0.0,
-            "total_requests": 0,
-            "cache_hits": 0,
-            "hit_rate": 0.0,
-            "avg_latency_hit": 0.0,
-            "avg_latency_miss": 0.0,
-            "queries": []
-        }
+    # Try Redis first
+    client = _try_get_redis_client()
+    if client:
+        try:
+            total_saved = float(await client.get("gateway_metric:total_cost_saved") or 0.0)
+            total_spent = float(await client.get("gateway_metric:total_cost_spent") or 0.0)
+            total_requests = int(await client.get("gateway_metric:total_requests") or 0)
+            cache_hits = int(await client.get("gateway_metric:cache_hits") or 0)
+            total_latency_hit = float(await client.get("gateway_metric:total_latency_hit") or 0.0)
+            total_latency_miss = float(await client.get("gateway_metric:total_latency_miss") or 0.0)
+            raw_queries = await client.lrange("gateway_queries", 0, 19)
+            queries = [json.loads(q) for q in raw_queries]
+
+            cache_misses = total_requests - cache_hits
+            hit_rate = (cache_hits / total_requests) * 100 if total_requests > 0 else 0.0
+            avg_latency_hit = total_latency_hit / cache_hits if cache_hits > 0 else 0.0
+            avg_latency_miss = total_latency_miss / cache_misses if cache_misses > 0 else 0.0
+
+            return {
+                "total_saved": total_saved,
+                "total_spent": total_spent,
+                "total_requests": total_requests,
+                "cache_hits": cache_hits,
+                "hit_rate": hit_rate,
+                "avg_latency_hit": avg_latency_hit,
+                "avg_latency_miss": avg_latency_miss,
+                "queries": queries
+            }
+        except Exception as e:
+            global _redis_available
+            _redis_available = False
+            logger.warning(f"Redis read failed ({e}) — serving in-memory metrics.")
+
+    # Fallback: always return in-memory data
+    total_requests = _in_memory_metrics["total_requests"]
+    cache_hits = _in_memory_metrics["cache_hits"]
+    cache_misses = total_requests - cache_hits
+    hit_rate = (cache_hits / total_requests) * 100 if total_requests > 0 else 0.0
+    avg_latency_hit = _in_memory_metrics["total_latency_hit"] / cache_hits if cache_hits > 0 else 0.0
+    avg_latency_miss = _in_memory_metrics["total_latency_miss"] / cache_misses if cache_misses > 0 else 0.0
+
+    return {
+        "total_saved": _in_memory_metrics["total_saved"],
+        "total_spent": _in_memory_metrics["total_spent"],
+        "total_requests": total_requests,
+        "cache_hits": cache_hits,
+        "hit_rate": hit_rate,
+        "avg_latency_hit": avg_latency_hit,
+        "avg_latency_miss": avg_latency_miss,
+        "queries": _in_memory_metrics["queries"][:20]
+    }

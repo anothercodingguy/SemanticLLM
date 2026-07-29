@@ -32,16 +32,19 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
         prompt_tokens = cached_data.get("usage", {}).get("prompt_tokens", 0)
         completion_tokens = cached_data.get("usage", {}).get("completion_tokens", 0)
         
-        # Log metrics
-        await record_metric(
-            prompt=full_prompt,
-            complexity=complexity,
-            model_routed=model_routed,
-            is_cache_hit=True,
-            latency_ms=latency_ms,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens
-        )
+        # Log metrics (fire-and-forget — never block the response)
+        try:
+            await record_metric(
+                prompt=full_prompt,
+                complexity=complexity,
+                model_routed=model_routed,
+                is_cache_hit=True,
+                latency_ms=latency_ms,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens
+            )
+        except Exception:
+            pass
         
         response.headers["X-Cache-Lookup"] = "HIT"
         return JSONResponse(content=cached_data, headers=dict(response.headers))
@@ -55,22 +58,28 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
             # Re-evaluate just for metric logging if fallback happened
             complexity = "COMPLEX" if evaluate_complexity(full_prompt) == "llama-3.3-70b-versatile" else "SIMPLE"
             
-        # 3. Store in Semantic Cache for future hits
-        await store_prompt(full_prompt, response_data)
+        # 3. Store in Semantic Cache for future hits (best-effort)
+        try:
+            await store_prompt(full_prompt, response_data)
+        except Exception:
+            pass
         
-        # 4. Log metrics
+        # 4. Log metrics (fire-and-forget — never block the response)
         prompt_tokens = response_data.get("usage", {}).get("prompt_tokens", 0)
         completion_tokens = response_data.get("usage", {}).get("completion_tokens", 0)
         
-        await record_metric(
-            prompt=full_prompt,
-            complexity=complexity,
-            model_routed=model_routed,
-            is_cache_hit=False,
-            latency_ms=latency_ms,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens
-        )
+        try:
+            await record_metric(
+                prompt=full_prompt,
+                complexity=complexity,
+                model_routed=model_routed,
+                is_cache_hit=False,
+                latency_ms=latency_ms,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens
+            )
+        except Exception:
+            pass
         
         response.headers["X-Cache-Lookup"] = "MISS"
         return JSONResponse(content=response_data, headers=dict(response.headers))

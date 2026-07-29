@@ -481,6 +481,7 @@ def get_dashboard():
 
         .chat-messages {
             flex: 1;
+            min-height: 0;
             padding: 1.5rem;
             overflow-y: auto;
             display: flex;
