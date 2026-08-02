@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 from typing import Optional
 
 class Settings(BaseSettings):
-    GROQ_API_KEY: str
+    GROQ_API_KEY: str = ""
     OLLAMA_FALLBACK_URL: str = "http://localhost:11434/api/chat"
     CACHE_SIMILARITY_THRESHOLD: float = 0.92
     

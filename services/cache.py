@@ -1,6 +1,8 @@
 import os
 import json
 import httpx
+import hashlib
+import asyncio
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 from core.config import settings
@@ -19,6 +21,16 @@ else:
 
 # Lazily initialized fastembed model
 embedding_model = None
+
+def _run_fastembed(text: str) -> list[float] | None:
+    global embedding_model
+    if embedding_model is None:
+        embedding_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embeddings_generator = embedding_model.embed([text])
+    vector = next(embeddings_generator).tolist()
+    if vector and len(vector) >= VECTOR_SIZE:
+        return vector[:VECTOR_SIZE]
+    return None
 
 async def init_cache():
     """
@@ -49,8 +61,6 @@ async def get_embedding(text: str) -> list[float] | None:
     fallback to fastembed local model if HF API fails or is missing.
     Returns None if embedding cannot be generated.
     """
-    global embedding_model
-    
     # Try Hugging Face first if key is present
     if settings.HF_API_KEY:
         headers = {"Authorization": f"Bearer {settings.HF_API_KEY}"}
@@ -79,17 +89,11 @@ async def get_embedding(text: str) -> list[float] | None:
         except Exception as e:
             print(f"HF embedding failed, falling back to local: {e}")
 
-    # Fallback to local fastembed
+    # Fallback to local fastembed (run in thread to prevent blocking event loop)
     try:
-        if embedding_model is None:
-            embedding_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        
-        # fastembed returns an iterator of arrays
-        embeddings_generator = embedding_model.embed([text])
-        vector = next(embeddings_generator).tolist()
-        
-        if vector and len(vector) >= VECTOR_SIZE:
-            return vector[:VECTOR_SIZE]
+        vector = await asyncio.to_thread(_run_fastembed, text)
+        if vector:
+            return vector
     except Exception as e:
         print(f"Local embedding failed: {e}")
         
@@ -125,7 +129,8 @@ async def store_prompt(prompt: str, response_data: dict):
     if not vector:
         return
         
-    point_id = hash(prompt) % ((1<<63)-1)
+    # Deterministic integer point ID derived from SHA-256 hash of prompt
+    point_id = int(hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:15], 16)
     
     try:
         await client.upsert(

@@ -5,10 +5,15 @@ from core.config import settings
 from schemas.chat import ChatCompletionRequest
 import logging
 
+import re
+
 logger = logging.getLogger(__name__)
 
-# Initialize Groq client with a default timeout of 8.0 seconds to prevent exceeding Vercel limits
-groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY, timeout=8.0)
+def get_groq_client() -> AsyncGroq:
+    api_key = (settings.GROQ_API_KEY or "").strip()
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is not set in environment variables.")
+    return AsyncGroq(api_key=api_key, timeout=8.0)
 
 def evaluate_complexity(prompt: str) -> str:
     """
@@ -22,7 +27,7 @@ def evaluate_complexity(prompt: str) -> str:
         is_complex = True
     else:
         for keyword in settings.COMPLEX_KEYWORDS:
-            if keyword in prompt_lower:
+            if re.search(r'\b' + re.escape(keyword) + r'\b', prompt_lower):
                 is_complex = True
                 break
                 
@@ -36,14 +41,17 @@ async def call_groq(request: ChatCompletionRequest, target_model: str) -> dict:
     Call Groq API.
     """
     messages_dict = [{"role": m.role, "content": m.content} for m in request.messages]
+    groq_client = get_groq_client()
     
-    chat_completion = await groq_client.chat.completions.create(
-        messages=messages_dict,
-        model=target_model,
-        temperature=request.temperature,
-        max_tokens=request.max_tokens,
-    )
-    
+    kwargs = {
+        "messages": messages_dict,
+        "model": target_model,
+        "temperature": request.temperature,
+    }
+    if request.max_tokens is not None:
+        kwargs["max_tokens"] = request.max_tokens
+
+    chat_completion = await groq_client.chat.completions.create(**kwargs)
     return chat_completion.model_dump()
 
 async def call_ollama_fallback(request: ChatCompletionRequest, target_model: str) -> dict:
