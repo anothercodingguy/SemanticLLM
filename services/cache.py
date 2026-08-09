@@ -6,36 +6,46 @@ import asyncio
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 from core.config import settings
-from fastembed import TextEmbedding
 
 VECTOR_SIZE = 384
 COLLECTION_NAME = "semantic_cache"
 
 QDRANT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "qdrant_data")
 
-# Initialize client
-if settings.QDRANT_URL:
-    client = AsyncQdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
-else:
-    client = AsyncQdrantClient(location=":memory:")
+# Initialize client safely
+client = None
+try:
+    if settings.QDRANT_URL:
+        client = AsyncQdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
+    else:
+        client = AsyncQdrantClient(location=":memory:")
+except Exception as e:
+    print(f"Qdrant client initialization notice: {e}")
+    client = None
 
 # Lazily initialized fastembed model
 embedding_model = None
 
 def _run_fastembed(text: str) -> list[float] | None:
     global embedding_model
-    if embedding_model is None:
-        embedding_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    embeddings_generator = embedding_model.embed([text])
-    vector = next(embeddings_generator).tolist()
-    if vector and len(vector) >= VECTOR_SIZE:
-        return vector[:VECTOR_SIZE]
+    try:
+        if embedding_model is None:
+            from fastembed import TextEmbedding
+            embedding_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        embeddings_generator = embedding_model.embed([text])
+        vector = next(embeddings_generator).tolist()
+        if vector and len(vector) >= VECTOR_SIZE:
+            return vector[:VECTOR_SIZE]
+    except Exception as e:
+        print(f"Local fastembed fallback unavailable: {e}")
     return None
 
 async def init_cache():
     """
     Ensure the collection exists in Qdrant.
     """
+    if not client:
+        return
     try:
         exists = await client.collection_exists(COLLECTION_NAME)
         if not exists:
@@ -50,6 +60,8 @@ async def close_cache():
     """
     Close Qdrant client connection.
     """
+    if not client:
+        return
     try:
         await client.close()
     except Exception as e:
@@ -103,6 +115,8 @@ async def get_similar_prompt(prompt: str) -> dict | None:
     """
     Check if the prompt exists in the cache with similarity >= threshold.
     """
+    if not client:
+        return None
     vector = await get_embedding(prompt)
     if not vector:
         return None
@@ -125,6 +139,8 @@ async def store_prompt(prompt: str, response_data: dict):
     """
     Store the prompt and its response in the vector database.
     """
+    if not client:
+        return
     vector = await get_embedding(prompt)
     if not vector:
         return
@@ -145,3 +161,4 @@ async def store_prompt(prompt: str, response_data: dict):
         )
     except Exception as e:
         print(f"Qdrant upsert error: {e}")
+
