@@ -1,14 +1,23 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, List
 
 class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     OLLAMA_FALLBACK_URL: str = "http://localhost:11434/api/chat"
-    CACHE_SIMILARITY_THRESHOLD: float = 0.92
+    CACHE_SIMILARITY_THRESHOLD: float = 0.82
     
-    # Simple heuristic config
-    COMPLEXITY_MAX_LENGTH: int = 200
-    COMPLEX_KEYWORDS: list[str] = ["code", "analyze", "debug", "explain", "architecture", "complex", "system"]
+    # Model configuration
+    MODEL_SIMPLE: str = "llama-3.1-8b-instant"
+    MODEL_COMPLEX: str = "llama-3.3-70b-versatile"
+    
+    # Complexity heuristics
+    COMPLEXITY_MAX_LENGTH: int = 250
+    COMPLEX_KEYWORDS: List[str] = [
+        "code", "analyze", "debug", "explain", "architecture", 
+        "complex", "system", "algorithm", "refactor", "optimize", 
+        "security", "database", "schema", "benchmark", "concurrency",
+        "kubernetes", "docker", "pipeline", "async", "traceback"
+    ]
 
     # External Serverless DB Configs
     REDIS_URL: Optional[str] = None
@@ -19,6 +28,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = 'utf-8'
-        extra = "ignore" # Allow extra environment variables in system without failing settings validation
+        extra = "ignore" # Allow extra environment variables without failing validation
 
 settings = Settings()

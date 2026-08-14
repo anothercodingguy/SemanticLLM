@@ -3,30 +3,36 @@ import json
 import httpx
 import hashlib
 import asyncio
+import logging
+from typing import Optional, Tuple, Dict, Any
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 from core.config import settings
 
+logger = logging.getLogger(__name__)
+
 VECTOR_SIZE = 384
 COLLECTION_NAME = "semantic_cache"
 
-QDRANT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "qdrant_data")
-
-# Initialize client safely
-client = None
+# Initialize Qdrant client
+client: Optional[AsyncQdrantClient] = None
 try:
     if settings.QDRANT_URL:
         client = AsyncQdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
     else:
         client = AsyncQdrantClient(location=":memory:")
 except Exception as e:
-    print(f"Qdrant client initialization notice: {e}")
+    logger.warning(f"Qdrant client initialization notice: {e}")
     client = None
+
+# In-memory fast cache and vector fallback
+_in_memory_exact_cache: Dict[str, Dict[str, Any]] = {}
+_in_memory_vector_cache: list[Dict[str, Any]] = []
 
 # Lazily initialized fastembed model
 embedding_model = None
 
-def _run_fastembed(text: str) -> list[float] | None:
+def _run_fastembed(text: str) -> Optional[list[float]]:
     global embedding_model
     try:
         if embedding_model is None:
@@ -37,13 +43,24 @@ def _run_fastembed(text: str) -> list[float] | None:
         if vector and len(vector) >= VECTOR_SIZE:
             return vector[:VECTOR_SIZE]
     except Exception as e:
-        print(f"Local fastembed fallback unavailable: {e}")
+        logger.warning(f"Local fastembed fallback notice: {e}")
     return None
+
+def _cosine_similarity(v1: list[float], v2: list[float]) -> float:
+    dot = sum(a * b for a, b in zip(v1, v2))
+    norm_a = sum(a * a for a in v1) ** 0.5
+    norm_b = sum(b * b for b in v2) ** 0.5
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+_collection_initialized = False
 
 async def init_cache():
     """
     Ensure the collection exists in Qdrant.
     """
+    global _collection_initialized
     if not client:
         return
     try:
@@ -53,8 +70,15 @@ async def init_cache():
                 collection_name=COLLECTION_NAME,
                 vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
             )
+            logger.info("Qdrant collection 'semantic_cache' initialized.")
+        _collection_initialized = True
     except Exception as e:
-        print(f"Failed to initialize Qdrant collection: {e}")
+        logger.warning(f"Qdrant collection init notice: {e}")
+
+async def _ensure_cache_ready():
+    global _collection_initialized
+    if not _collection_initialized and client:
+        await init_cache()
 
 async def close_cache():
     """
@@ -65,15 +89,16 @@ async def close_cache():
     try:
         await client.close()
     except Exception as e:
-        print(f"Failed to close Qdrant client: {e}")
+        logger.warning(f"Failed to close Qdrant client: {e}")
 
-async def get_embedding(text: str) -> list[float] | None:
+async def get_embedding(text: str) -> Optional[list[float]]:
     """
-    Generate embedding using Hugging Face Serverless Inference API, 
-    fallback to fastembed local model if HF API fails or is missing.
-    Returns None if embedding cannot be generated.
+    Generate 384-dimensional embedding using Hugging Face Inference API or local fastembed.
     """
-    # Try Hugging Face first if key is present
+    if not text or not text.strip():
+        return None
+
+    # Try Hugging Face API if HF_API_KEY is present
     if settings.HF_API_KEY:
         headers = {"Authorization": f"Bearer {settings.HF_API_KEY}"}
         payload = {"inputs": text}
@@ -81,7 +106,7 @@ async def get_embedding(text: str) -> list[float] | None:
         
         try:
             async with httpx.AsyncClient() as http_client:
-                response = await http_client.post(url, headers=headers, json=payload, timeout=5.0)
+                response = await http_client.post(url, headers=headers, json=payload, timeout=4.0)
                 response.raise_for_status()
                 result = response.json()
                 
@@ -99,66 +124,99 @@ async def get_embedding(text: str) -> list[float] | None:
                 if vector and len(vector) >= VECTOR_SIZE:
                     return vector[:VECTOR_SIZE]
         except Exception as e:
-            print(f"HF embedding failed, falling back to local: {e}")
+            logger.warning(f"HF embedding API notice, using fastembed: {e}")
 
-    # Fallback to local fastembed (run in thread to prevent blocking event loop)
+    # Fallback to local fastembed (non-blocking thread pool)
     try:
         vector = await asyncio.to_thread(_run_fastembed, text)
         if vector:
             return vector
     except Exception as e:
-        print(f"Local embedding failed: {e}")
+        logger.warning(f"Local embedding notice: {e}")
         
     return None
 
-async def get_similar_prompt(prompt: str) -> dict | None:
+async def get_similar_prompt(prompt: str) -> Tuple[Optional[Dict[str, Any]], float]:
     """
-    Check if the prompt exists in the cache with similarity >= threshold.
+    Check if the prompt exists in cache with similarity >= threshold.
+    Returns (cached_payload, similarity_score).
     """
-    if not client:
-        return None
+    norm_prompt = prompt.strip().lower()
+
+    # 1. Instant exact match check
+    if norm_prompt in _in_memory_exact_cache:
+        return _in_memory_exact_cache[norm_prompt], 1.0
+
+    # 2. Semantic vector lookup
     vector = await get_embedding(prompt)
     if not vector:
-        return None
-        
-    try:
-        hits = await client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=vector,
-            limit=1
-        )
-        
-        if hits and hits[0].score >= settings.CACHE_SIMILARITY_THRESHOLD:
-            return hits[0].payload
-    except Exception as e:
-        print(f"Qdrant search error: {e}")
-        
-    return None
+        return None, 0.0
 
-async def store_prompt(prompt: str, response_data: dict):
+    # Try Qdrant query_points
+    if client:
+        try:
+            await _ensure_cache_ready()
+            results = await client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=vector,
+                limit=1
+            )
+            if results and results.points:
+                top_hit = results.points[0]
+                score = float(top_hit.score)
+                if score >= settings.CACHE_SIMILARITY_THRESHOLD:
+                    return top_hit.payload, score
+        except Exception as e:
+            logger.warning(f"Qdrant query_points notice: {e}")
+
+    # Fallback: in-memory vector cache scan
+    best_score = 0.0
+    best_payload = None
+    for entry in _in_memory_vector_cache:
+        sim = _cosine_similarity(vector, entry["vector"])
+        if sim > best_score:
+            best_score = sim
+            best_payload = entry["payload"]
+
+    if best_score >= settings.CACHE_SIMILARITY_THRESHOLD and best_payload is not None:
+        return best_payload, best_score
+
+    return None, best_score
+
+async def store_prompt(prompt: str, response_data: Dict[str, Any]):
     """
-    Store the prompt and its response in the vector database.
+    Store the prompt and response in vector database and in-memory caches.
     """
-    if not client:
-        return
+    norm_prompt = prompt.strip().lower()
+    _in_memory_exact_cache[norm_prompt] = response_data
+
     vector = await get_embedding(prompt)
     if not vector:
         return
-        
-    # Deterministic integer point ID derived from SHA-256 hash of prompt
-    point_id = int(hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:15], 16)
-    
-    try:
-        await client.upsert(
-            collection_name=COLLECTION_NAME,
-            points=[
-                PointStruct(
-                    id=point_id,
-                    vector=vector,
-                    payload=response_data
-                )
-            ]
-        )
-    except Exception as e:
-        print(f"Qdrant upsert error: {e}")
 
+    # In-memory vector backup
+    _in_memory_vector_cache.insert(0, {
+        "prompt": prompt,
+        "vector": vector,
+        "payload": response_data
+    })
+    if len(_in_memory_vector_cache) > 200:
+        _in_memory_vector_cache.pop()
+
+    # Qdrant upsert
+    if client:
+        point_id = int(hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:15], 16)
+        try:
+            await _ensure_cache_ready()
+            await client.upsert(
+                collection_name=COLLECTION_NAME,
+                points=[
+                    PointStruct(
+                        id=point_id,
+                        vector=vector,
+                        payload=response_data
+                    )
+                ]
+            )
+        except Exception as e:
+            logger.warning(f"Qdrant upsert notice: {e}")
