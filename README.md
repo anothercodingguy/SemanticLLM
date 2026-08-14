@@ -14,27 +14,27 @@
 
 ```mermaid
 flowchart TD
-    User([User / AI Agent / RAG Pipeline]) -->|POST /v1/chat/completions| Gateway[Semantic Gateway]
+    User(["User / AI Agent / RAG Pipeline"]) -->|"POST /v1/chat/completions"| Gateway["Semantic Gateway"]
     
-    Gateway --> Compress[1. Prompt Compression Engine]
-    Compress -->|Deduplicate logs, RAG chunks & whitespace| CacheCheck{2. Semantic Vector Cache\nFastEmbed 384-dim}
+    Gateway --> Compress["1. Prompt Compression Engine"]
+    Compress -->|"Deduplicate logs, RAG chunks & whitespace"| CacheCheck{"2. Semantic Vector Cache<br/>FastEmbed 384-dim"}
     
-    CacheCheck -->|Similarity >= 0.82\nCACHE HIT| HitResp[Return Cached Response\nLatency: < 50ms | Cost: $0.00]
+    CacheCheck -->|"Similarity >= 0.82 (CACHE HIT)"| HitResp["Return Cached Response<br/>Latency: Sub-50ms · Cost: $0.00"]
     
-    CacheCheck -->|Similarity < 0.82\nCACHE MISS| Route[3. Complexity Router]
+    CacheCheck -->|"Similarity < 0.82 (CACHE MISS)"| Route["3. Complexity Router"]
     
-    Route -->|Simple Query\nLength < 250 chars| M8B[Groq Llama-3.1-8B-Instant\n$0.05 / 1M input tokens]
-    Route -->|Complex / Code / Architecture| M70B[Groq Llama-3.3-70B-Versatile\n$0.59 / 1M input tokens]
+    Route -->|"Simple Query (Length < 250 chars)"| M8B["Groq Llama-3.1-8B-Instant<br/>$0.05 / 1M input tokens"]
+    Route -->|"Complex Query (Code / Architecture)"| M70B["Groq Llama-3.3-70B-Versatile<br/>$0.59 / 1M input tokens"]
     
-    M8B --> Inference[Upstream Inference]
+    M8B --> Inference["Upstream Inference"]
     M70B --> Inference
     
-    Inference -.->|If Groq Unreachable| Fallback[Ollama / Resilient Fallback]
+    Inference -.->|"If Groq Unreachable"| Fallback["Ollama / Resilient Fallback"]
     
-    Inference --> Store[4. Upsert Semantic Cache & Record Metrics]
+    Inference --> Store["4. Upsert Semantic Cache & Record Metrics"]
     Fallback --> Store
     
-    Store --> ClientResponse[Return Response + Gateway Headers]
+    Store --> ClientResponse["Return Response + Gateway Headers"]
     HitResp --> ClientResponse
 ```
 
