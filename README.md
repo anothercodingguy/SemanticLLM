@@ -1,13 +1,13 @@
-# Semantic Gateway
+# Semantic LLM Gateway
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![Groq](https://img.shields.io/badge/Groq-Llama%203.1%20%7C%203.3-f55036?style=flat)](https://groq.com/)
-[![SuperCompress](https://img.shields.io/badge/SuperCompress-Neural%20Engine-4d88ff?style=flat)](https://www.supercompress.dev/)
+[![Semantic LLM](https://img.shields.io/badge/Semantic%20LLM-Neural%20Engine-4d88ff?style=flat)](https://github.com/anothercodingguy/SemanticLLM)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20Cache-dc2626?style=flat&logo=qdrant)](https://qdrant.tech/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-**Semantic Gateway** is an intelligent, high-performance LLM proxy and token cost-reduction layer powered by the **SuperCompress** query-aware neural compression engine. It intercepts AI feature requests before inference to **deduplicate noisy context**, **compress oversized agent traces and RAG dumps by ~65% while keeping >98% answer-critical evidence**, **serve semantically equivalent queries from a sub-50ms vector cache**, and **route simple vs. complex queries** across different model tiers (`llama-3.1-8b-instant` vs. `llama-3.3-70b-versatile`).
+**Semantic Gateway** is an intelligent, high-performance LLM proxy and token cost-reduction layer powered by the **Semantic Neural Compression Engine**. It intercepts AI feature requests before inference to **deduplicate noisy context**, **compress oversized agent traces and RAG dumps by ~65% while keeping >98% answer-critical evidence**, **serve semantically equivalent queries from a sub-50ms vector cache**, and **route simple vs. complex queries** across different model tiers (`llama-3.1-8b-instant` vs. `llama-3.3-70b-versatile`).
 
 ---
 
@@ -17,7 +17,7 @@
 flowchart TD
     User(["User / AI Agent / RAG Pipeline / MCP Plugin"]) -->|"POST /v1/compress or POST /v1/chat/completions"| Gateway["Semantic Gateway"]
     
-    Gateway --> Compress["1. SuperCompress Query-Aware Neural Engine"]
+    Gateway --> Compress["1. Semantic Neural Context Engine"]
     Compress -->|"Segment blocks, score semantic relevance, strip noise"| CacheCheck{"2. Semantic Vector Cache<br/>FastEmbed 384-dim"}
     
     CacheCheck -->|"Similarity >= 0.82 (CACHE HIT)"| HitResp["Return Cached Response<br/>Latency: Sub-50ms · Cost: $0.00"]
@@ -43,7 +43,7 @@ flowchart TD
 
 ## ✨ Features
 
-### 1. 🧹 SuperCompress Query-Aware Context Compression
+### 1. 🧹 Semantic Neural Context Compression
 * **Compiler Mode (Default)**: Dynamically segments markdown headers, multi-file diffs, tool outputs, and paragraphs. Scores semantic relevance against the query to drop low-value filler while locking answer-critical evidence (>98% target, 99.4% pooled containment).
 * **Precision Mode**: High-confidence gate with strict verifier bounds.
 * **Fixed-Budget Mode**: Enables fixed-budget retention benchmarks (0.1–1.0 budget ratio).
@@ -72,7 +72,7 @@ flowchart TD
 
 | Method | Answer-Critical Recall | Mean Token Cut | Extra Model Calls | Latency (CPU) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Semantic Gateway (SuperCompress)** | **100.0% Oracle Recall** | **65.2% Cut** | **$0 (Zero Calls)** | **~42ms** |
+| **Semantic LLM (Compiler Mode)** | **100.0% Oracle Recall** | **65.2% Cut** | **$0 (Zero Calls)** | **~42ms** |
 | H2O Heavy Hitter | 97.9% | 65.0% Cut | $0 (Zero Calls) | ~120ms |
 | LLM Summarization Call | 60.5% | 65.0% Cut | +1 Full Model Call ($$$) | ~1,850ms |
 | Truncation / FIFO | 24.8% (Lost Answers) | 65.0% Cut | $0 (Zero Calls) | ~2ms |
@@ -106,7 +106,7 @@ uvicorn main:app --reload --port 8000
 
 ## 📡 API Reference
 
-### 1. SuperCompress Context Compression (`POST /v1/compress` or `POST /compress`)
+### 1. Context Compression (`POST /v1/compress` or `POST /compress`)
 
 #### Request:
 ```bash
@@ -143,7 +143,7 @@ curl -X POST http://localhost:8000/v1/compress \
       "tokens": 72
     }
   ],
-  "policy_name": "SemanticGateway-compiler",
+  "policy_name": "SemanticLLM-compiler",
   "mode": "compiler",
   "sustainability": {
     "co2_kg_avoided": 0.0000034,
@@ -210,7 +210,7 @@ Add to `.cursor/mcp.json`:
   "mcpServers": {
     "semantic-gateway": {
       "command": "npx",
-      "args": ["-y", "supercompress-proxy", "--port", "8000"]
+      "args": ["-y", "@semantic-llm/mcp-proxy", "--port", "8000"]
     }
   }
 }
@@ -230,14 +230,14 @@ Output:
 ```text
 ✅ /health check passed
 ✅ Dashboard HTML page test passed
-✅ SuperCompress neural context compression engine tests passed
-✅ SuperCompress HTTP API (POST /v1/compress & POST /compress) passed
+✅ Semantic LLM neural context compression engine tests passed
+✅ Semantic LLM HTTP API (POST /v1/compress & POST /compress) passed
 ✅ Model complexity routing classification test passed
 ✅ Cost calculation and pricing formulas passed
 ✅ Empty prompt validation test passed
 ✅ End-to-end Gateway, Semantic Cache & Metrics flow passed
 
-🎉 ALL SUPERCOMPRESS & SEMANTIC GATEWAY AUDIT TESTS PASSED SUCCESSFULLY!
+🎉 ALL SEMANTIC LLM & GATEWAY AUDIT TESTS PASSED SUCCESSFULLY!
 ```
 
 ---

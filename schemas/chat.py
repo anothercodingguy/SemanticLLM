@@ -25,7 +25,7 @@ class Usage(BaseModel):
     completion_tokens: int = 0
     total_tokens: int = 0
 
-# ── SuperCompress API Schemas ───────────────────────────────────────────
+# ── Semantic LLM Context Compression API Schemas ─────────────────────────
 class CompressRequest(BaseModel):
     context: Optional[str] = None
     text: Optional[str] = None  # Alias for context
@@ -65,7 +65,7 @@ class CompressResponse(BaseModel):
     compression_risk: str = "low"  # "low", "medium", "high"
     kept_blocks: List[BlockReason] = Field(default_factory=list)
     dropped_blocks: List[BlockReason] = Field(default_factory=list)
-    policy_name: str = "SemanticGateway-compiler"
+    policy_name: str = "SemanticLLM-compiler"
     mode: str = "compiler"
     keep_ratio: float = 1.0
     kept_line_ratio: float = 1.0

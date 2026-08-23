@@ -25,13 +25,13 @@ def test_root_dashboard():
     response = client.get("/")
     assert response.status_code == 200
     assert "Semantic Gateway" in response.text
-    assert "SuperCompress" in response.text
+    assert "Semantic" in response.text
     assert "Interactive Sandbox" in response.text
     assert "Benchmarks" in response.text
     assert "Coding Agents" in response.text
     print("✅ Dashboard HTML page test passed")
 
-def test_supercompress_engine():
+def test_semantic_compression_engine():
     # 1. Test token estimation
     assert estimate_tokens("hello world") >= 2
     
@@ -41,7 +41,7 @@ def test_supercompress_engine():
     assert removed_count >= 1
     assert "Line 2: Another unique log entry" in deduped
 
-    # 3. Test SuperCompress query-aware compiler mode
+    # 3. Test Semantic LLM query-aware compiler mode
     long_dump = """
     ## Customer Support Ticket History
     User ID: usr_9281742 | Plan: Enterprise Tier | Region: US-East
@@ -77,9 +77,9 @@ def test_supercompress_engine():
     assert sustain["co2_kg_avoided"] > 0
     assert sustain["watt_hours_saved"] > 0
     assert sustain["gpu_seconds_avoided"] > 0
-    print("✅ SuperCompress neural context compression engine tests passed")
+    print("✅ Semantic LLM neural context compression engine tests passed")
 
-def test_supercompress_http_endpoints():
+def test_semantic_compression_http_endpoints():
     # 1. Test POST /v1/compress (JSON)
     req_payload = {
         "context": "System Context:\n[2026-08-16 INFO] Log line 1\n[2026-08-16 INFO] Log line 1\n\n### Database Status\nPostgres connection established.",
@@ -107,7 +107,7 @@ def test_supercompress_http_endpoints():
     # 4. Test missing context validation (400)
     res_err = client.post("/v1/compress", json={"context": ""})
     assert res_err.status_code == 400
-    print("✅ SuperCompress HTTP API (POST /v1/compress & POST /compress) passed")
+    print("✅ Semantic LLM HTTP API (POST /v1/compress & POST /compress) passed")
 
 def test_complexity_evaluator():
     simple_prompt = "What is the capital of France?"
@@ -179,10 +179,10 @@ def test_end_to_end_gateway_and_cache():
 if __name__ == "__main__":
     test_health_check()
     test_root_dashboard()
-    test_supercompress_engine()
-    test_supercompress_http_endpoints()
+    test_semantic_compression_engine()
+    test_semantic_compression_http_endpoints()
     test_complexity_evaluator()
     test_pricing_and_cost_calculations()
     test_empty_prompt_validation()
     test_end_to_end_gateway_and_cache()
-    print("\n🎉 ALL SUPERCOMPRESS & SEMANTIC GATEWAY AUDIT TESTS PASSED SUCCESSFULLY!")
+    print("\n🎉 ALL SEMANTIC LLM & GATEWAY AUDIT TESTS PASSED SUCCESSFULLY!")

@@ -28,7 +28,7 @@ from services.metrics import record_metric, calculate_direct_cost, calculate_act
 
 router = APIRouter()
 
-# ── SuperCompress API Endpoints (POST /v1/compress & POST /compress & GET) ────
+# ── Semantic LLM API Endpoints (POST /v1/compress & POST /compress & GET) ────
 @router.post("/compress", response_model=CompressResponse)
 @router.post("/v1/compress", response_model=CompressResponse)
 @router.get("/compress", response_model=CompressResponse)
@@ -38,7 +38,7 @@ async def compress_endpoint(
     response: Response
 ):
     """
-    SuperCompress-compatible query-aware prompt compression endpoint.
+    Semantic LLM query-aware prompt compression endpoint.
     Supports JSON bodies, form-encoded payloads, and GET query parameters.
     """
     context_text = ""
@@ -103,7 +103,7 @@ async def compress_endpoint(
             detail="Missing required parameter: 'context' (or 'text') must be provided."
         )
 
-    # Execute SuperCompress Query-Aware Compression Engine
+    # Execute Semantic LLM Query-Aware Compression Engine
     start_time = time.time()
     result = compress_for_turn(
         context=context_text,
@@ -114,7 +114,7 @@ async def compress_endpoint(
     )
     latency_ms = (time.time() - start_time) * 1000
 
-    # Set SuperCompress Response Headers
+    # Set Semantic LLM Response Headers
     response.headers["X-Original-Tokens"] = str(result["original_tokens"])
     response.headers["X-Kept-Tokens"] = str(result["kept_tokens"])
     response.headers["X-Tokens-Saved"] = str(result["tokens_saved"])
@@ -133,7 +133,7 @@ async def compress_endpoint(
 @router.post("/chat/completions")
 async def chat_completions(request: ChatCompletionRequest, response: Response):
     """
-    OpenAI-compatible drop-in proxy with SuperCompress query-aware context compression,
+    OpenAI-compatible drop-in proxy with Semantic LLM query-aware context compression,
     sub-50ms semantic vector caching, and model complexity routing.
     """
     user_messages = [m.content for m in request.messages if m.role == "user"]
@@ -148,7 +148,7 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
     history_messages = [m.content for m in request.messages[:-1]] if len(request.messages) > 1 else []
     last_user_query = user_messages[-1] if user_messages else raw_prompt
 
-    # ── Step 1: SuperCompress Query-Aware Context Optimization ────────────
+    # ── Step 1: Semantic LLM Query-Aware Context Optimization ────────────
     compression_result = compress_for_turn(
         context=raw_prompt,
         user_query=last_user_query,
@@ -276,7 +276,7 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
         response.headers["X-Tokens-Saved"] = str(tokens_saved)
         response.headers["X-Latency-Ms"] = f"{total_latency_ms:.1f}"
 
-        # Combine payload with rich gateway and SuperCompress metadata
+        # Combine payload with rich gateway and Semantic LLM metadata
         result_payload = {
             **response_data,
             "compression": compression_result,

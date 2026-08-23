@@ -323,7 +323,7 @@ def score_block_relevance(block: Dict[str, Any], query: str) -> Tuple[float, str
     return final_score, reason
 
 
-# ── SuperCompress Core Compression Engine ───────────────────────────────
+# ── Semantic LLM Neural Context Compression Engine ──────────────────────
 def compress_context_engine(
     text: str,
     query: str = "",
@@ -349,7 +349,7 @@ def compress_context_engine(
             "compression_risk": "low",
             "kept_blocks": [],
             "dropped_blocks": [],
-            "policy_name": f"SemanticGateway-{mode}",
+            "policy_name": f"SemanticLLM-{mode}",
             "mode": mode,
             "keep_ratio": 1.0,
             "kept_line_ratio": 1.0,
@@ -497,7 +497,7 @@ def compress_context_engine(
         "compression_risk": compression_risk,
         "kept_blocks": kept_blocks_data,
         "dropped_blocks": dropped_blocks_data,
-        "policy_name": f"SemanticGateway-{mode}",
+        "policy_name": f"SemanticLLM-{mode}",
         "mode": mode,
         "keep_ratio": keep_ratio,
         "kept_line_ratio": kept_line_ratio,
@@ -518,7 +518,7 @@ def compress_context(
     budget_ratio: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Public Python API alias for SuperCompress context compression.
+    Public Python API alias for Semantic LLM context compression.
     """
     return compress_context_engine(text=text, query=query, mode=mode, budget_ratio=budget_ratio)
 

@@ -39,7 +39,7 @@ app.add_middleware(
     ],
 )
 
-# Include router at both root and /v1 for full SuperCompress + OpenAI API compatibility
+# Include router at both root and /v1 for full Semantic LLM + OpenAI API compatibility
 app.include_router(chat_router, prefix="/v1")
 app.include_router(chat_router)
 
@@ -58,7 +58,7 @@ async def get_metrics():
 @app.get("/", response_class=HTMLResponse)
 def get_dashboard():
     """
-    Serves the complete SuperCompress-grade Semantic Gateway Developer Studio in authentic DeepSeek Obsidian Dark Glass aesthetic.
+    Serves the complete Semantic LLM Gateway Developer Studio in authentic DeepSeek Obsidian Dark Glass aesthetic.
     """
     html_content = r"""<!DOCTYPE html>
 <html lang="en-US" data-theme="dark">
@@ -739,10 +739,10 @@ def get_dashboard():
 
                             <div class="ds-term-body">
                                 <div id="term-pane-quick">
-                                    <div class="ds-code-comment"># Start Semantic Gateway with SuperCompress engine</div>
+                                    <div class="ds-code-comment"># Start Semantic Gateway with Neural Compression engine</div>
                                     <div><span class="ds-prompt-sym">$ </span>uvicorn main:app --host 0.0.0.0 --port 8000 --reload</div>
                                     <br/>
-                                    <div style="color:var(--ds-green);">✓ Initialized SuperCompress Engine (Compiler & Precision)</div>
+                                    <div style="color:var(--ds-green);">✓ Initialized Semantic Neural Compression Engine (Compiler & Precision)</div>
                                     <div style="color:var(--ds-green);">✓ FastEmbed 384-dim Dense Vector Cache Ready</div>
                                     <div style="color:var(--ds-green);">✓ Complexity Router (Groq 8B & 70B) Active</div>
                                     <div style="color:var(--ds-muted);">Listening on http://127.0.0.1:8000 ▋</div>
@@ -756,7 +756,7 @@ def get_dashboard():
                                 </div>
 
                                 <div id="term-pane-sdk" style="display:none;">
-                                    <div class="ds-code-comment"># Python Library SuperCompress Import</div>
+                                    <div class="ds-code-comment"># Python Library Semantic LLM Import</div>
                                     <div><span class="ds-code-keyword">from</span> services.compression <span class="ds-code-keyword">import</span> compress_for_turn</div>
                                     <br/>
                                     <div>res = compress_for_turn(context=chat_history, user_query=<span class="ds-code-string">"What failed?"</span>, mode=<span class="ds-code-string">"compiler"</span>)</div>
@@ -765,8 +765,8 @@ def get_dashboard():
 
                                 <div id="term-pane-mcp" style="display:none;">
                                     <div class="ds-code-comment"># Coding Agent MCP Plugin Setup (Cursor, Claude Code, Windsurf)</div>
-                                    <div><span class="ds-prompt-sym">$ </span>npm install -g supercompress-proxy</div>
-                                    <div><span class="ds-prompt-sym">$ </span>npx supercompress setup --proxy http://localhost:8000</div>
+                                    <div><span class="ds-prompt-sym">$ </span>npm install -g @semantic-llm/mcp-proxy</div>
+                                    <div><span class="ds-prompt-sym">$ </span>npx @semantic-llm/mcp setup --proxy http://localhost:8000</div>
                                 </div>
                             </div>
                         </div>
@@ -843,7 +843,7 @@ def get_dashboard():
             </div>
         </section>
 
-        <!-- USE CASES THAT COMPOUND (All 6 SuperCompress Use Cases) -->
+        <!-- USE CASES THAT COMPOUND (6 Semantic LLM Context Workloads) -->
         <section class="ds-section" id="use-cases" style="background: rgba(0,0,0,0.2);">
             <div class="ds-container">
                 <div class="ds-section-header">
@@ -975,7 +975,7 @@ def get_dashboard():
                         </thead>
                         <tbody>
                             <tr class="highlight-row">
-                                <td><strong style="color:var(--ds-brand-light);">Semantic Gateway (SuperCompress)</strong></td>
+                                <td><strong style="color:var(--ds-brand-light);">Semantic LLM (Compiler Mode)</strong></td>
                                 <td><span class="ds-pill-score green">100.0% Oracle Recall</span></td>
                                 <td><strong style="color:var(--ds-green);">65.2% Cut</strong></td>
                                 <td><strong style="color:var(--ds-green);">$0 (Zero Calls)</strong></td>
@@ -1043,7 +1043,7 @@ def get_dashboard():
                             &nbsp;&nbsp;<span class="ds-code-string">"mcpServers"</span>: {<br/>
                             &nbsp;&nbsp;&nbsp;&nbsp;<span class="ds-code-string">"semantic-gateway"</span>: {<br/>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="ds-code-string">"command"</span>: <span class="ds-code-string">"npx"</span>,<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="ds-code-string">"args"</span>: [<span class="ds-code-string">"-y"</span>, <span class="ds-code-string">"supercompress-proxy"</span>, <span class="ds-code-string">"--port"</span>, <span class="ds-code-string">"8000"</span>]<br/>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="ds-code-string">"args"</span>: [<span class="ds-code-string">"-y"</span>, <span class="ds-code-string">"@semantic-llm/mcp-proxy"</span>, <span class="ds-code-string">"--port"</span>, <span class="ds-code-string">"8000"</span>]<br/>
                             &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
                             &nbsp;&nbsp;}<br/>
                             }
@@ -1335,14 +1335,14 @@ def get_dashboard():
     <div class="ds-modal-backdrop" id="docs-modal" onclick="if(event.target===this) closeDocsModal()">
         <div class="ds-modal-card">
             <div class="ds-modal-head">
-                <h3 style="font-size:1.35rem; font-weight:700; color:#ffffff;">Semantic Gateway & SuperCompress API Guide</h3>
+                <h3 style="font-size:1.35rem; font-weight:700; color:#ffffff;">Semantic LLM Gateway & Compression API Guide</h3>
                 <button class="ds-modal-close" onclick="closeDocsModal()">&times;</button>
             </div>
             <p style="color:var(--ds-description); margin-bottom:1.5rem; font-size:0.95rem;">
-                Semantic Gateway is a high-performance proxy and compression engine. Drop it in front of OpenAI, Anthropic, Groq, or local models.
+                Semantic Gateway is a high-performance proxy and neural compression engine. Drop it in front of OpenAI, Anthropic, Groq, or local models.
             </p>
 
-            <h4 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:#ffffff;">1. SuperCompress Endpoint (POST /v1/compress)</h4>
+            <h4 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:#ffffff;">1. Context Compression Endpoint (POST /v1/compress)</h4>
             <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:1rem; font-family:var(--font-mono); font-size:12.5px; color:#cbd5e1; margin-bottom:1.5rem;">
 curl -X POST http://localhost:8000/v1/compress \
   -H <span class="ds-code-string">"Content-Type: application/json"</span> \
@@ -1390,7 +1390,7 @@ print(response.choices[0].message.content)
             <div class="ds-footer-grid">
                 <div class="ds-footer-brand">
                     <h4>Semantic Gateway</h4>
-                    <p>SuperCompress neural prompt compression, sub-50ms semantic vector caching, and cost-aware model routing.</p>
+                    <p>Semantic LLM neural prompt compression, sub-50ms semantic vector caching, and cost-aware model routing.</p>
                     <p style="margin-top:1rem; color:var(--ds-muted); font-size:0.8rem;">Apache 2.0 Open Source</p>
                 </div>
                 <div class="ds-footer-col">
@@ -1417,7 +1417,7 @@ print(response.choices[0].message.content)
                 <div class="ds-footer-col">
                     <h5>Engines</h5>
                     <ul>
-                        <li><a href="#features">SuperCompress Compiler</a></li>
+                        <li><a href="#features">Semantic Neural Compiler</a></li>
                         <li><a href="#features">384-Dim FastEmbed Vectors</a></li>
                         <li><a href="#features">Groq Llama 3.1 & 3.3</a></li>
                         <li><a href="#features">Ollama Fallback</a></li>
@@ -1596,7 +1596,7 @@ print(response.choices[0].message.content)
             } else if (document.getElementById('term-pane-sdk').style.display !== 'none') {
                 text = 'from services.compression import compress_for_turn\n\nres = compress_for_turn(context=chat_history, user_query="What failed?", mode="compiler")\nprint(res)';
             } else {
-                text = 'npm install -g supercompress-proxy && npx supercompress setup --proxy http://localhost:8000';
+                text = 'npm install -g @semantic-llm/mcp-proxy && npx @semantic-llm/mcp setup --proxy http://localhost:8000';
             }
             copyText(text);
             const copyLabel = document.getElementById('copy-text');

@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantic-llm"
+version = "2.0.0"
+description = "Query-Aware Neural Context Compression, Semantic Vector Caching & Complexity Routing Gateway for LLMs"
+readme = "README.md"
+authors = [
+    { name = "Semantic LLM Team", email = "hello@semanticllm.ai" }
+]
+license = { text = "Apache-2.0" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+keywords = [
+    "llm", "prompt-compression", "context-compression", "semantic-cache",
+    "vector-cache", "groq", "qdrant", "fastembed", "cost-optimization"
+]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "httpx>=0.24.0",
+    "groq>=0.4.0",
+    "qdrant-client>=1.7.0",
+    "redis>=5.0.0",
+    "python-dotenv>=1.0.0",
+    "fastembed>=0.2.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/anothercodingguy/SemanticLLM"
+Repository = "https://github.com/anothercodingguy/SemanticLLM.git"
+Issues = "https://github.com/anothercodingguy/SemanticLLM/issues"
+Documentation = "https://github.com/anothercodingguy/SemanticLLM#readme"
+
+[project.scripts]
+semantic-gateway = "main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["api*", "core*", "schemas*", "services*"]
