@@ -58,7 +58,7 @@ async def get_metrics():
 @app.get("/", response_class=HTMLResponse)
 def get_dashboard():
     """
-    Serves the complete Semantic LLM Gateway Developer Studio in authentic DeepSeek Obsidian Dark Glass aesthetic.
+    Serves the streamlined, modern Semantic LLM Developer Studio in authentic DeepSeek Obsidian Dark Glass aesthetic.
     """
     html_content = r"""<!DOCTYPE html>
 <html lang="en-US" data-theme="dark">
@@ -137,38 +137,37 @@ def get_dashboard():
             position: absolute;
             border-radius: 50%;
             filter: blur(110px);
-            opacity: 0.28;
+            opacity: 0.25;
             pointer-events: none;
             mix-blend-mode: screen;
         }
         .orb-1 { top: -150px; left: 20%; width: 650px; height: 650px; background: radial-gradient(circle, #2d5f9e 0%, #1a3870 55%, transparent 70%); }
-        .orb-2 { top: 400px; right: 5%; width: 550px; height: 550px; background: radial-gradient(circle, #1e40af 0%, #0f275a 60%, transparent 70%); opacity: 0.18; }
-        .orb-3 { bottom: 0px; left: 50%; transform: translateX(-50%); width: 900px; height: 450px; background: radial-gradient(ellipse at center, #2d5f9e 0%, #1a3870 45%, transparent 70%); opacity: 0.22; }
+        .orb-2 { top: 400px; right: 5%; width: 550px; height: 550px; background: radial-gradient(circle, #1e40af 0%, #0f275a 60%, transparent 70%); opacity: 0.15; }
 
         #hero-canvas {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
-            opacity: 0.65;
+            opacity: 0.6;
             mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, transparent 100%);
         }
 
         /* Container */
-        .ds-container { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 10; }
+        .ds-container { max-width: 1240px; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 10; }
 
         /* Header */
         .ds-header-wrapper {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(11, 12, 15, 0.75);
+            background: rgba(11, 12, 15, 0.8);
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
             border-bottom: 1px solid var(--ds-border-default);
             transition: all 0.25s ease;
         }
         .ds-header-bar {
-            max-width: 1280px; margin: 0 auto;
+            max-width: 1240px; margin: 0 auto;
             padding: 0.85rem 1.5rem;
             display: flex; align-items: center; justify-content: space-between;
         }
@@ -182,19 +181,8 @@ def get_dashboard():
         }
         .ds-logo-text {
             font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; color: #ffffff;
-            display: flex; align-items: center; gap: 0.4rem;
         }
-        .ds-pill-tag {
-            display: inline-flex; align-items: center; padding: 1px; border-radius: 8px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.08) 35%, rgba(255, 255, 255, 0.04) 65%, rgba(255, 255, 255, 0.4) 100%);
-            box-shadow: 0 0 16px rgba(255, 255, 255, 0.06);
-        }
-        .ds-pill-tag-inner {
-            padding: 3px 8px; border-radius: 7px; font-family: var(--font-mono);
-            font-size: 11px; font-weight: 600; line-height: 1; background: rgba(0, 0, 0, 0.4);
-            color: rgba(255, 255, 255, 0.95); text-transform: uppercase; letter-spacing: 0.06em;
-        }
-        .ds-nav-links { display: flex; align-items: center; gap: 1.6rem; }
+        .ds-nav-links { display: flex; align-items: center; gap: 1.8rem; }
         .ds-nav-link {
             text-decoration: none; color: var(--ds-description);
             font-size: 0.88rem; font-weight: 500; transition: color 0.15s ease;
@@ -203,20 +191,6 @@ def get_dashboard():
         .ds-nav-link:hover { color: #ffffff; }
 
         .ds-header-actions { display: flex; align-items: center; gap: 0.85rem; }
-        .ds-toggle-pill {
-            display: inline-flex; align-items: center;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-pill); padding: 2px; gap: 2px;
-        }
-        .ds-toggle-btn {
-            background: transparent; border: none; color: var(--ds-description);
-            font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-            padding: 4px 10px; border-radius: var(--radius-pill); cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .ds-toggle-btn.is-active { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
-
         .ds-btn-header {
             display: inline-flex; align-items: center; gap: 0.4rem;
             background: rgba(255, 255, 255, 0.05);
@@ -254,15 +228,14 @@ def get_dashboard():
 
         /* Hero */
         .ds-hero-section {
-            padding: 5.5rem 0 4.5rem;
-            min-height: calc(82vh - 70px);
+            padding: 4.5rem 0 3.5rem;
             display: flex; align-items: center;
         }
         .ds-hero-grid {
-            display: grid; grid-template-columns: 58fr 42fr;
-            gap: 3.5rem; align-items: center; width: 100%;
+            display: grid; grid-template-columns: 56fr 44fr;
+            gap: 3rem; align-items: center; width: 100%;
         }
-        .ds-hero-content { display: flex; flex-direction: column; align-items: flex-start; gap: 1.4rem; }
+        .ds-hero-content { display: flex; flex-direction: column; align-items: flex-start; gap: 1.3rem; }
 
         .ds-hero-badge {
             display: inline-flex; align-items: center; padding: 1px; border-radius: 8px;
@@ -282,23 +255,23 @@ def get_dashboard():
         @keyframes pulse-live { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
 
         .ds-text-hero {
-            font-size: clamp(2.6rem, 5vw, 4.2rem);
-            font-weight: 700; letter-spacing: -0.04em; line-height: 1.08; color: #ffffff;
+            font-size: clamp(2.4rem, 4.5vw, 3.8rem);
+            font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; color: #ffffff;
         }
         .ds-brand-gradient {
             background: linear-gradient(135deg, #ffffff 0%, #9ec3ff 50%, #4d88ff 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .ds-text-body {
-            font-size: 1.08rem; line-height: 1.65; color: var(--ds-description); max-width: 620px;
+            font-size: 1.05rem; line-height: 1.65; color: var(--ds-description); max-width: 580px;
         }
-        .ds-hero-cta-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; margin-top: 0.5rem; }
+        .ds-hero-cta-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; margin-top: 0.4rem; }
 
         /* Quickstart Tabbed Box */
         .ds-terminal-container { display: flex; flex-direction: column; width: 100%; }
         .ds-term-tabs { display: flex; gap: 4px; margin-left: 8px; z-index: 2; }
         .ds-term-tab {
-            padding: 8px 14px; font-size: 12.5px; font-weight: 500;
+            padding: 7px 12px; font-size: 12px; font-weight: 500;
             color: var(--ds-description); background: transparent;
             border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0;
             cursor: pointer; transition: all 0.2s ease;
@@ -317,15 +290,15 @@ def get_dashboard():
         }
         .ds-term-header {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--ds-border-default);
+            padding: 0.65rem 1.15rem; border-bottom: 1px solid var(--ds-border-default);
             background: rgba(12, 13, 17, 0.5);
         }
-        .ds-traffic-lights { display: flex; align-items: center; gap: 7px; }
-        .ds-dot { width: 11px; height: 11px; border-radius: 50%; }
+        .ds-traffic-lights { display: flex; align-items: center; gap: 6px; }
+        .ds-dot { width: 10px; height: 10px; border-radius: 50%; }
         .ds-dot.red { background: var(--ds-red); }
         .ds-dot.yellow { background: var(--ds-amber); }
         .ds-dot.green { background: var(--ds-green); }
-        .ds-term-title { font-family: var(--font-mono); font-size: 12px; color: var(--ds-muted); }
+        .ds-term-title { font-family: var(--font-mono); font-size: 11.5px; color: var(--ds-muted); }
         .ds-copy-btn {
             background: transparent; border: none; color: var(--ds-description);
             font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px;
@@ -333,8 +306,8 @@ def get_dashboard():
         }
         .ds-copy-btn:hover { color: #ffffff; }
         .ds-term-body {
-            padding: 1.35rem 1.5rem; font-family: var(--font-mono); font-size: 13px;
-            line-height: 1.75; color: var(--ds-primary); overflow-x: auto; max-height: 290px;
+            padding: 1.25rem 1.4rem; font-family: var(--font-mono); font-size: 12.5px;
+            line-height: 1.7; color: var(--ds-primary); overflow-x: auto; max-height: 260px;
         }
         .ds-prompt-sym { color: var(--ds-brand); font-weight: 700; user-select: none; }
         .ds-code-comment { color: var(--ds-muted); }
@@ -343,90 +316,53 @@ def get_dashboard():
 
         /* Value Metrics Bar */
         .ds-metrics-bar-section {
-            padding: 2.5rem 0;
+            padding: 2rem 0;
             border-top: 1px solid var(--ds-border-subtle);
             border-bottom: 1px solid var(--ds-border-subtle);
             background: rgba(255, 255, 255, 0.015);
         }
         .ds-val-grid-4 {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;
         }
-        .ds-val-card { display: flex; flex-direction: column; gap: 0.35rem; }
-        .ds-val-num { font-size: 1.85rem; font-weight: 700; color: #ffffff; letter-spacing: -0.02em; }
-        .ds-val-lbl { font-size: 0.95rem; font-weight: 600; color: var(--ds-brand-light); }
-        .ds-val-sub { font-size: 0.85rem; color: var(--ds-description); line-height: 1.5; }
+        .ds-val-card { display: flex; flex-direction: column; gap: 0.25rem; }
+        .ds-val-num { font-size: 1.75rem; font-weight: 700; color: #ffffff; letter-spacing: -0.02em; }
+        .ds-val-lbl { font-size: 0.92rem; font-weight: 600; color: var(--ds-brand-light); }
+        .ds-val-sub { font-size: 0.82rem; color: var(--ds-description); line-height: 1.45; }
 
         /* Sections */
-        .ds-section { padding: 5.5rem 0; position: relative; }
+        .ds-section { padding: 4.5rem 0; position: relative; }
         .ds-section-header {
-            max-width: 840px; margin: 0 auto 3rem; text-align: center;
-            display: flex; flex-direction: column; align-items: center; gap: 1rem;
+            max-width: 800px; margin: 0 auto 2.5rem; text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 0.85rem;
         }
         .ds-text-heading1 {
-            font-size: clamp(2rem, 3.8vw, 2.8rem); font-weight: 700;
-            letter-spacing: -0.03em; line-height: 1.18; color: #ffffff;
+            font-size: clamp(1.8rem, 3.2vw, 2.5rem); font-weight: 700;
+            letter-spacing: -0.03em; line-height: 1.2; color: #ffffff;
         }
-        .ds-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
-        .ds-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
-        .ds-card {
-            background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 2rem; display: flex;
-            flex-direction: column; align-items: flex-start; text-align: left;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden;
-        }
-        .ds-card:hover {
-            border-color: var(--ds-border-hover); transform: translateY(-3px);
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), 0 0 20px rgba(77, 136, 255, 0.1);
-        }
-        .ds-card-icon { color: var(--ds-brand); margin-bottom: 1.25rem; }
-        .ds-card-title { font-size: 1.25rem; font-weight: 600; color: #ffffff; margin-bottom: 0.6rem; }
-        .ds-card-desc { font-size: 0.9rem; color: var(--ds-description); line-height: 1.65; margin-bottom: 0.85rem; }
-        .ds-card-bullets { list-style: none; font-size: 0.85rem; color: var(--ds-secondary); line-height: 1.8; padding-left: 0; }
-        .ds-card-bullets li::before { content: "• "; color: var(--ds-brand); font-weight: bold; }
-
-        /* How It Works Steps */
-        .ds-steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-top: 2rem; }
-        .ds-step-card {
-            background: rgba(255, 255, 255, 0.025); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 1.75rem; position: relative;
-        }
-        .ds-step-num {
-            font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700;
-            color: var(--ds-brand); opacity: 0.7; margin-bottom: 0.5rem;
-        }
-        .ds-step-title { font-size: 1.15rem; font-weight: 600; color: #ffffff; margin-bottom: 0.4rem; }
-        .ds-step-desc { font-size: 0.88rem; color: var(--ds-description); line-height: 1.6; }
 
         /* Benchmarks Table */
         .ds-bench-table-wrap {
             background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
             border-radius: var(--radius-md); overflow-x: auto; box-shadow: var(--shadow-card);
-            margin-top: 1.5rem;
+            margin-top: 1.25rem;
         }
-        table.ds-bench-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
-        table.ds-bench-table th, table.ds-bench-table td { padding: 1.15rem 1.4rem; border-bottom: 1px solid var(--ds-border-subtle); }
-        table.ds-bench-table th { background: rgba(0, 0, 0, 0.3); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ds-muted); font-weight: 700; }
+        table.ds-bench-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left; }
+        table.ds-bench-table th, table.ds-bench-table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--ds-border-subtle); }
+        table.ds-bench-table th { background: rgba(0, 0, 0, 0.3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ds-muted); font-weight: 700; }
         table.ds-bench-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
         table.ds-bench-table tr.highlight-row td { background: rgba(77, 136, 255, 0.06); font-weight: 600; }
-        .ds-pill-score { padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; }
+        .ds-pill-score { padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 700; font-size: 11.5px; display: inline-block; }
         .ds-pill-score.green { background: rgba(40, 200, 64, 0.15); color: #4ade80; border: 1px solid rgba(40, 200, 64, 0.3); }
         .ds-pill-score.amber { background: rgba(254, 188, 46, 0.15); color: #fde047; border: 1px solid rgba(254, 188, 46, 0.3); }
         .ds-pill-score.red { background: rgba(255, 95, 87, 0.15); color: #fca5a5; border: 1px solid rgba(255, 95, 87, 0.3); }
 
-        /* Coding Agent MCP Section */
-        .ds-agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; }
-        .ds-agent-card {
-            background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 1.75rem; box-shadow: var(--shadow-card);
-        }
-
         /* Developer Studio & Tabs */
         .ds-studio-tabs {
             display: flex; justify-content: center; gap: 1.5rem;
-            margin-bottom: 2.5rem; border-bottom: 1px solid var(--ds-border-default);
+            margin-bottom: 2rem; border-bottom: 1px solid var(--ds-border-default);
         }
         .ds-studio-tab-btn {
-            padding: 0.85rem 1.75rem; font-size: 1rem; font-weight: 600;
+            padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 600;
             color: var(--ds-description); background: transparent; border: none;
             border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s ease; margin-bottom: -1px;
         }
@@ -439,118 +375,109 @@ def get_dashboard():
         .ds-tab-pane.active { display: block; animation: ds-fadeIn 0.25s ease-in-out; }
         @keyframes ds-fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        .ds-sandbox-grid { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 2rem; align-items: start; }
+        .ds-sandbox-grid { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 1.75rem; align-items: start; }
         .ds-glass-panel {
             background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 1.75rem; box-shadow: var(--shadow-card);
+            border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-card);
         }
         .ds-panel-eyebrow {
             display: flex; align-items: center; justify-content: space-between;
             font-size: 11px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.08em; color: var(--ds-muted); margin-bottom: 1rem;
+            letter-spacing: 0.08em; color: var(--ds-muted); margin-bottom: 0.85rem;
         }
 
         /* Mode Selector */
         .ds-mode-selector-row {
-            display: flex; align-items: center; gap: 0.75rem;
-            margin-bottom: 1.2rem; padding: 0.6rem 0.85rem;
+            display: flex; align-items: center; gap: 0.65rem;
+            margin-bottom: 1rem; padding: 0.5rem 0.75rem;
             background: rgba(0, 0, 0, 0.35); border: 1px solid var(--ds-border-default);
             border-radius: var(--radius-sm);
         }
         .ds-mode-pill {
             background: transparent; border: 1px solid transparent; color: var(--ds-description);
-            font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-pill);
+            font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-pill);
             cursor: pointer; transition: all 0.15s ease;
         }
         .ds-mode-pill.active { background: var(--ds-brand-bg); border-color: rgba(77,136,255,0.4); color: #ffffff; }
 
-        .ds-chip-row { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.75rem; margin-bottom: 1rem; }
+        .ds-chip-row { display: flex; gap: 0.45rem; overflow-x: auto; padding-bottom: 0.65rem; margin-bottom: 0.85rem; }
         .ds-chip {
             background: rgba(255, 255, 255, 0.04); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-pill); padding: 0.35rem 0.85rem; font-size: 0.8rem;
+            border-radius: var(--radius-pill); padding: 0.3rem 0.75rem; font-size: 0.78rem;
             font-weight: 500; color: var(--ds-description); cursor: pointer; white-space: nowrap; transition: all 0.15s ease;
         }
         .ds-chip:hover { background: rgba(77, 136, 255, 0.1); border-color: rgba(77, 136, 255, 0.4); color: #ffffff; }
 
         .ds-textarea {
-            width: 100%; height: 140px; padding: 1rem;
+            width: 100%; height: 130px; padding: 0.85rem;
             background: rgba(11, 12, 16, 0.8); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 13px;
-            color: #ffffff; line-height: 1.6; resize: vertical; outline: none; transition: border-color 0.2s ease;
+            border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12.5px;
+            color: #ffffff; line-height: 1.55; resize: vertical; outline: none; transition: border-color 0.2s ease;
         }
         .ds-textarea:focus { border-color: var(--ds-brand); box-shadow: 0 0 0 3px rgba(77, 136, 255, 0.15); }
         
         .ds-query-input {
-            width: 100%; padding: 0.75rem 1rem; margin-top: 0.75rem;
+            width: 100%; padding: 0.65rem 0.85rem; margin-top: 0.65rem;
             background: rgba(11, 12, 16, 0.8); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 13px;
+            border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12.5px;
             color: #ffffff; outline: none; transition: border-color 0.2s ease;
         }
         .ds-query-input:focus { border-color: var(--ds-brand); box-shadow: 0 0 0 3px rgba(77, 136, 255, 0.15); }
 
-        .ds-prompt-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
-        .ds-token-badge { font-family: var(--font-mono); font-size: 12px; color: var(--ds-description); }
+        .ds-prompt-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.85rem; }
+        .ds-token-badge { font-family: var(--font-mono); font-size: 11.5px; color: var(--ds-description); }
 
-        /* Result Viewer */
-        .ds-result-section { margin-top: 1.75rem; border-top: 1px solid var(--ds-border-default); padding-top: 1.5rem; }
-        .ds-res-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+        /* Streamlined Result Viewer */
+        .ds-result-section { margin-top: 1.5rem; border-top: 1px solid var(--ds-border-default); padding-top: 1.25rem; }
+        .ds-res-tabs { display: flex; gap: 0.45rem; margin-bottom: 1rem; flex-wrap: wrap; }
         .ds-res-tab-btn {
             background: rgba(255, 255, 255, 0.04); border: 1px solid var(--ds-border-default);
-            padding: 0.4rem 0.95rem; border-radius: var(--radius-sm); font-size: 0.8rem;
+            padding: 0.35rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.78rem;
             font-weight: 600; color: var(--ds-description); cursor: pointer; transition: all 0.15s ease;
         }
         .ds-res-tab-btn.active {
             background: var(--ds-brand); color: #ffffff; border-color: var(--ds-brand);
-            box-shadow: 0 0 14px rgba(77, 136, 255, 0.35);
+            box-shadow: 0 0 12px rgba(77, 136, 255, 0.3);
         }
         .ds-res-pane {
             display: none; background: rgba(11, 12, 16, 0.6);
             border: 1px solid var(--ds-border-default); border-radius: var(--radius-sm);
-            padding: 1.25rem; font-size: 0.9rem; line-height: 1.65;
+            padding: 1.15rem; font-size: 0.88rem; line-height: 1.6;
         }
         .ds-res-pane.active { display: block; }
 
-        .ds-diff-box { font-family: var(--font-mono); font-size: 12px; line-height: 1.65; max-height: 260px; overflow-y: auto; }
+        .ds-diff-box { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; max-height: 240px; overflow-y: auto; }
         .ds-diff-orig {
             color: #fca5a5; background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.6rem; border-radius: 6px; margin-bottom: 0.6rem;
+            border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem;
         }
         .ds-diff-opt {
             color: #86efac; background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2); padding: 0.6rem; border-radius: 6px;
+            border: 1px solid rgba(34, 197, 94, 0.2); padding: 0.5rem; border-radius: 6px;
         }
 
-        .ds-blocks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .ds-blocks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
         .ds-block-card {
             background: rgba(255, 255, 255, 0.025); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); padding: 0.85rem; font-size: 0.85rem;
+            border-radius: var(--radius-sm); padding: 0.75rem; font-size: 0.82rem;
         }
         .ds-block-card.kept { border-left: 3px solid var(--ds-green); }
         .ds-block-card.dropped { border-left: 3px solid var(--ds-red); opacity: 0.8; }
-        .ds-block-head { display: flex; justify-content: space-between; font-weight: 600; color: #ffffff; margin-bottom: 0.35rem; }
-        .ds-block-reason { font-size: 12px; color: var(--ds-description); }
+        .ds-block-head { display: flex; justify-content: space-between; font-weight: 600; color: #ffffff; margin-bottom: 0.25rem; }
+        .ds-block-reason { font-size: 11.5px; color: var(--ds-description); }
 
-        .ds-diag-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        .ds-diag-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
         .ds-diag-card {
             background: rgba(255, 255, 255, 0.03); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); padding: 0.85rem 1rem;
+            border-radius: var(--radius-sm); padding: 0.75rem 0.85rem;
         }
-        .ds-diag-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ds-muted); font-weight: 700; }
-        .ds-diag-val { font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-top: 0.25rem; }
-
-        /* Sustainability Widget */
-        .ds-sustain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 0.5rem; }
-        .ds-sustain-card {
-            background: rgba(40, 200, 64, 0.06); border: 1px solid rgba(40, 200, 64, 0.25);
-            border-radius: var(--radius-sm); padding: 1rem; text-align: center;
-        }
-        .ds-sustain-val { font-size: 1.35rem; font-weight: 700; color: #4ade80; }
-        .ds-sustain-lbl { font-size: 11.5px; color: var(--ds-secondary); margin-top: 0.25rem; font-weight: 500; }
+        .ds-diag-lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ds-muted); font-weight: 700; }
+        .ds-diag-val { font-size: 0.92rem; font-weight: 600; color: #ffffff; margin-top: 0.2rem; }
 
         /* Telemetry Right Panel */
         .ds-stat-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 0.9rem 0; border-bottom: 1px solid var(--ds-border-subtle); font-size: 0.9rem;
+            padding: 0.75rem 0; border-bottom: 1px solid var(--ds-border-subtle); font-size: 0.88rem;
         }
         .ds-stat-row:last-child { border-bottom: none; }
         .ds-stat-name { color: var(--ds-description); font-weight: 500; }
@@ -559,32 +486,32 @@ def get_dashboard():
         .ds-stat-val.green { color: var(--ds-green); }
 
         /* Impact Dashboard Grid */
-        .ds-dash-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+        .ds-dash-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.75rem; }
         .ds-summary-card {
             background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-subtle);
+            border-radius: var(--radius-md); padding: 1.35rem; box-shadow: var(--shadow-subtle);
         }
         .ds-summary-lbl { font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.06em; color: var(--ds-muted); }
-        .ds-summary-val { font-size: 1.75rem; font-weight: 700; color: #ffffff; margin-top: 0.5rem; }
+        .ds-summary-val { font-size: 1.65rem; font-weight: 700; color: #ffffff; margin-top: 0.4rem; }
 
         .ds-chart-box {
             background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 2rem; margin-bottom: 2rem; height: 350px;
+            border-radius: var(--radius-md); padding: 1.75rem; margin-bottom: 1.75rem; height: 320px;
         }
         .ds-table-wrap {
             background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
             border-radius: var(--radius-md); overflow-x: auto;
         }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th, td { text-align: left; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--ds-border-subtle); }
+        th, td { text-align: left; padding: 1rem 1.15rem; border-bottom: 1px solid var(--ds-border-subtle); }
         th { color: var(--ds-muted); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; background: rgba(0, 0, 0, 0.25); }
         tr:last-child td { border-bottom: none; }
         tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
-        .ds-badge { padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .ds-badge { padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; }
         .ds-badge.simple { background: rgba(77, 136, 255, 0.15); color: var(--ds-brand-light); border: 1px solid rgba(77, 136, 255, 0.3); }
         .ds-badge.complex { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-        .ds-status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+        .ds-status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; }
         .ds-status-pill.hit { color: var(--ds-green); }
         .ds-status-pill.miss { color: var(--ds-amber); }
 
@@ -598,34 +525,30 @@ def get_dashboard():
         .ds-modal-card {
             background: var(--ds-surface-1); border: 1px solid var(--ds-border-default);
             border-radius: var(--radius-lg); box-shadow: var(--shadow-card), var(--shadow-glow);
-            max-width: 720px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 2.25rem;
+            max-width: 720px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 2rem;
         }
-        .ds-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .ds-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
         .ds-modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--ds-muted); }
 
-        /* Footer */
-        .ds-footer {
-            background: #090a0d; border-top: 1px solid var(--ds-border-default);
-            padding: 5rem 0 4rem; color: var(--ds-description); position: relative; z-index: 10;
+        /* Minimal Footer */
+        .ds-footer-clean {
+            border-top: 1px solid var(--ds-border-default);
+            padding: 2.5rem 0; color: var(--ds-description); font-size: 0.85rem;
         }
-        .ds-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3.5rem; }
-        .ds-footer-brand h4 { font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; color: #ffffff; }
-        .ds-footer-brand p { font-size: 0.88rem; color: var(--ds-description); line-height: 1.7; max-width: 320px; }
-        .ds-footer-col h5 { font-size: 0.85rem; color: #ffffff; margin-bottom: 1.25rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
-        .ds-footer-col ul { list-style: none; }
-        .ds-footer-col li { margin-bottom: 0.75rem; }
-        .ds-footer-col a { color: var(--ds-description); text-decoration: none; font-size: 0.88rem; transition: color 0.15s ease; cursor: pointer; }
-        .ds-footer-col a:hover { color: #ffffff; }
+        .ds-footer-clean-row {
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+        }
+        .ds-footer-clean-links { display: flex; gap: 1.5rem; list-style: none; }
+        .ds-footer-clean-links a { color: var(--ds-description); text-decoration: none; transition: color 0.15s ease; }
+        .ds-footer-clean-links a:hover { color: #ffffff; }
 
         @media (max-width: 1024px) {
-            .ds-hero-grid, .ds-sandbox-grid, .ds-agent-grid { grid-template-columns: 1fr; gap: 2.5rem; }
-            .ds-grid-3, .ds-val-grid-4, .ds-grid-2, .ds-steps-grid { grid-template-columns: 1fr 1fr; }
-            .ds-dash-summary-grid { grid-template-columns: repeat(2, 1fr); }
-            .ds-footer-grid { grid-template-columns: 1fr 1fr; gap: 2.5rem; }
+            .ds-hero-grid, .ds-sandbox-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+            .ds-val-grid-4, .ds-dash-summary-grid { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 768px) {
             .ds-nav-links { display: none; }
-            .ds-grid-3, .ds-grid-2, .ds-steps-grid, .ds-val-grid-4, .ds-dash-summary-grid, .ds-footer-grid, .ds-diag-grid, .ds-blocks-grid, .ds-sustain-grid { grid-template-columns: 1fr; }
+            .ds-val-grid-4, .ds-dash-summary-grid, .ds-diag-grid, .ds-blocks-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -635,7 +558,6 @@ def get_dashboard():
     <div class="ambient-mesh">
         <div class="ambient-orb orb-1"></div>
         <div class="ambient-orb orb-2"></div>
-        <div class="ambient-orb orb-3"></div>
         <canvas id="hero-canvas"></canvas>
     </div>
 
@@ -656,22 +578,15 @@ def get_dashboard():
             </a>
 
             <nav class="ds-nav-links" aria-label="Main Navigation">
-                <a href="#features" class="ds-nav-link">Architecture</a>
-                <a href="#how-it-works" class="ds-nav-link">How it Works</a>
-                <a href="#use-cases" class="ds-nav-link">Use Cases</a>
-                <a href="#benchmarks" class="ds-nav-link">Benchmarks</a>
-                <a href="#agents" class="ds-nav-link">Coding Agents</a>
                 <a href="#demo" class="ds-nav-link" onclick="switchTab('sandbox')">Sandbox</a>
+                <a href="#benchmarks" class="ds-nav-link">Benchmarks</a>
                 <a href="#demo" class="ds-nav-link" onclick="switchTab('analytics')">Telemetry</a>
             </nav>
 
             <div class="ds-header-actions">
-                <div class="ds-toggle-pill">
-                    <button type="button" class="ds-toggle-btn is-active">Gateway Live</button>
-                    <button type="button" class="ds-toggle-btn" onclick="openDocsModal()">Docs</button>
-                </div>
+                <button type="button" class="ds-btn-header" onclick="openDocsModal()">Docs</button>
                 <a href="https://github.com/anothercodingguy/SemanticLLM" target="_blank" rel="noopener noreferrer" class="ds-btn-header" aria-label="GitHub Repository">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                    <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
                 </a>
             </div>
         </div>
@@ -685,7 +600,7 @@ def get_dashboard():
                     <!-- Left: Hero Content -->
                     <div class="ds-hero-content">
                         <div class="ds-hero-badge">
-                            <span><span class="ds-status-dot-live"></span> Query-Aware Neural Compression Engine · Groq & Ollama Connected</span>
+                            <span><span class="ds-status-dot-live"></span> Neural Context Engine · Groq Llama 3.1 & 3.3 · Vector Cache</span>
                         </div>
 
                         <h1 class="ds-text-hero">
@@ -694,19 +609,13 @@ def get_dashboard():
                         </h1>
 
                         <p class="ds-text-body">
-                            For teams running chat, RAG, support, or coding agents. Semantic Gateway removes low-value context before inference—so your models do more with the tokens you already pay for.
+                            Query-aware neural compression for chat, RAG, and coding agents. Drops low-value filler before inference while locking answer-critical evidence (>98% target, 99.4% recall).
                         </p>
 
                         <div class="ds-hero-cta-group">
                             <a href="#demo" onclick="switchTab('sandbox')" class="ds-btn-primary">
                                 Try Interactive Sandbox
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                            </a>
-                            <a href="#benchmarks" class="ds-btn-secondary">
-                                Benchmarks
-                            </a>
-                            <a href="#agents" class="ds-btn-secondary">
-                                Coding Agents (MCP)
                             </a>
                             <button onclick="openDocsModal()" class="ds-btn-secondary">
                                 Integration Docs
@@ -732,17 +641,17 @@ def get_dashboard():
                                 </div>
                                 <span class="ds-term-title">semantic-gateway — 127.0.0.1:8000</span>
                                 <button class="ds-copy-btn" onclick="copyTermCode()">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                     <span id="copy-text">Copy</span>
                                 </button>
                             </div>
 
                             <div class="ds-term-body">
                                 <div id="term-pane-quick">
-                                    <div class="ds-code-comment"># Start Semantic Gateway with Neural Compression engine</div>
+                                    <div class="ds-code-comment"># Start Semantic Gateway</div>
                                     <div><span class="ds-prompt-sym">$ </span>uvicorn main:app --host 0.0.0.0 --port 8000 --reload</div>
                                     <br/>
-                                    <div style="color:var(--ds-green);">✓ Initialized Semantic Neural Compression Engine (Compiler & Precision)</div>
+                                    <div style="color:var(--ds-green);">✓ Initialized Neural Compression Engine (Compiler & Precision)</div>
                                     <div style="color:var(--ds-green);">✓ FastEmbed 384-dim Dense Vector Cache Ready</div>
                                     <div style="color:var(--ds-green);">✓ Complexity Router (Groq 8B & 70B) Active</div>
                                     <div style="color:var(--ds-muted);">Listening on http://127.0.0.1:8000 ▋</div>
@@ -752,11 +661,11 @@ def get_dashboard():
                                     <div class="ds-code-comment"># Direct Context Compression Endpoint</div>
                                     <div>curl -X POST http://localhost:8000/v1/compress \</div>
                                     <div>  -H <span class="ds-code-string">"Content-Type: application/json"</span> \</div>
-                                    <div>  -d <span class="ds-code-string">'{"context": "Huge log dump...", "query": "What failed in the last deploy?", "mode": "compiler"}'</span></div>
+                                    <div>  -d <span class="ds-code-string">'{"context": "Huge log dump...", "query": "What failed in deploy?", "mode": "compiler"}'</span></div>
                                 </div>
 
                                 <div id="term-pane-sdk" style="display:none;">
-                                    <div class="ds-code-comment"># Python Library Semantic LLM Import</div>
+                                    <div class="ds-code-comment"># Python Library Import</div>
                                     <div><span class="ds-code-keyword">from</span> services.compression <span class="ds-code-keyword">import</span> compress_for_turn</div>
                                     <br/>
                                     <div>res = compress_for_turn(context=chat_history, user_query=<span class="ds-code-string">"What failed?"</span>, mode=<span class="ds-code-string">"compiler"</span>)</div>
@@ -782,165 +691,22 @@ def get_dashboard():
                     <div class="ds-val-card">
                         <div class="ds-val-num">~58–66%</div>
                         <div class="ds-val-lbl">Mean Token Cut</div>
-                        <div class="ds-val-sub">Drop as much as possible on held-out LongBench / OOD dumps — typically ~58–66% mean cut.</div>
+                        <div class="ds-val-sub">Dynamic compression eliminates low-value filler across long dumps.</div>
                     </div>
                     <div class="ds-val-card">
                         <div class="ds-val-num">99.4%</div>
                         <div class="ds-val-lbl">Critical Kept</div>
-                        <div class="ds-val-sub">Target &gt;98% answer-critical retention. Pooled held-out gold containment: 99.4% (180/181).</div>
+                        <div class="ds-val-sub">Target >98% oracle retention. Pooled gold containment 99.4%.</div>
                     </div>
                     <div class="ds-val-card">
-                        <div class="ds-val-num">~47ms</div>
-                        <div class="ds-val-lbl">Query-Aware on CPU</div>
-                        <div class="ds-val-sub">Semantic keep/drop vs the current ask. Zero extra LLM summarizer calls.</div>
+                        <div class="ds-val-num">&lt;50ms</div>
+                        <div class="ds-val-lbl">Query-Aware CPU Speed</div>
+                        <div class="ds-val-sub">Dense neural ranking runs on CPU without extra LLM summarizer calls.</div>
                     </div>
                     <div class="ds-val-card">
                         <div class="ds-val-num">$0.00</div>
                         <div class="ds-val-lbl">Semantic Cache Hits</div>
-                        <div class="ds-val-sub">Dense vector cosine similarity serves identical semantic intents at zero spend.</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- HOW IT WORKS (4-Step Pipeline) -->
-        <section class="ds-section" id="how-it-works">
-            <div class="ds-container">
-                <div class="ds-section-header">
-                    <span class="ds-hero-badge">
-                        <span>How It Works</span>
-                    </span>
-                    <h2 class="ds-text-heading1">
-                        Compress before the model call.
-                    </h2>
-                    <p class="ds-text-body">
-                        Context arrives oversized — chat history, docs, tool traces, and multi-file diffs piled into one prompt.
-                    </p>
-                </div>
-
-                <div class="ds-steps-grid">
-                    <div class="ds-step-card">
-                        <div class="ds-step-num">01</div>
-                        <div class="ds-step-title">Ingest</div>
-                        <div class="ds-step-desc">Ingests chat turns, RAG chunks, multi-file diffs, and tool execution traces.</div>
-                    </div>
-                    <div class="ds-step-card">
-                        <div class="ds-step-num">02</div>
-                        <div class="ds-step-title">Score</div>
-                        <div class="ds-step-desc">Scores semantic relevance and information density against the current query.</div>
-                    </div>
-                    <div class="ds-step-card">
-                        <div class="ds-step-num">03</div>
-                        <div class="ds-step-title">Keep</div>
-                        <div class="ds-step-desc">Meaning-first retention locks answer-critical lines, imports, and fences.</div>
-                    </div>
-                    <div class="ds-step-card">
-                        <div class="ds-step-num">04</div>
-                        <div class="ds-step-title">Ship</div>
-                        <div class="ds-step-desc">Sends ~65% fewer tokens to model inference, cutting latency and prefill cost.</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- USE CASES THAT COMPOUND (6 Semantic LLM Context Workloads) -->
-        <section class="ds-section" id="use-cases" style="background: rgba(0,0,0,0.2);">
-            <div class="ds-container">
-                <div class="ds-section-header">
-                    <span class="ds-hero-badge">
-                        <span>Use Cases That Compound</span>
-                    </span>
-                    <h2 class="ds-text-heading1">
-                        Do more with less across every workload.
-                    </h2>
-                    <p class="ds-text-body">
-                        From agentic coding to document-heavy work, meaning-first compression helps teams do more with less—without losing what matters.
-                    </p>
-                </div>
-
-                <div class="ds-grid-3">
-                    <!-- Use Case 1: Coding Agents -->
-                    <div class="ds-card">
-                        <div class="ds-card-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                        </div>
-                        <h3 class="ds-card-title">Coding Agents</h3>
-                        <p class="ds-card-desc">Compress task history, repo context, tool traces, and diffs so agents reason farther inside the same context window—and spend less per turn.</p>
-                        <ul class="ds-card-bullets">
-                            <li>Shrink multi-file diffs before the model call</li>
-                            <li>Keep plans + decisions, drop stale tool noise</li>
-                            <li>Works as an MCP plugin across Cursor, Claude Code, Codex</li>
-                        </ul>
-                    </div>
-
-                    <!-- Use Case 2: Long Conversations -->
-                    <div class="ds-card">
-                        <div class="ds-card-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        </div>
-                        <h3 class="ds-card-title">Long Conversations</h3>
-                        <p class="ds-card-desc">Keep long chats useful and coherent. Retains decisions, constraints, and facts that drive better answers—not every filler turn.</p>
-                        <ul class="ds-card-bullets">
-                            <li>Lower cost on multi-hour support or sales threads</li>
-                            <li>Preserve user preferences and commitments</li>
-                            <li>Reduce latency as history grows</li>
-                        </ul>
-                    </div>
-
-                    <!-- Use Case 3: RAG & Search -->
-                    <div class="ds-card">
-                        <div class="ds-card-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        </div>
-                        <h3 class="ds-card-title">RAG & Search</h3>
-                        <p class="ds-card-desc">Retrieved chunks often drown the query. Compress retrieved context so the model sees the evidence that matters for the current ask.</p>
-                        <ul class="ds-card-bullets">
-                            <li>Cut redundant passages across top-k results</li>
-                            <li>Keep citations and key claims intact</li>
-                            <li>Fit more evidence into the same budget</li>
-                        </ul>
-                    </div>
-
-                    <!-- Use Case 4: Support Copilots -->
-                    <div class="ds-card">
-                        <div class="ds-card-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                        </div>
-                        <h3 class="ds-card-title">Support Copilots</h3>
-                        <p class="ds-card-desc">Ticket history, macros, and knowledge-base hits add up fast. Compress before generation to keep replies accurate without burning tokens.</p>
-                        <ul class="ds-card-bullets">
-                            <li>Prioritize current issue + account state</li>
-                            <li>Drop repeated boilerplate from prior tickets</li>
-                            <li>Ship faster replies at lower per-ticket cost</li>
-                        </ul>
-                    </div>
-
-                    <!-- Use Case 5: Document Workflows -->
-                    <div class="ds-card">
-                        <div class="ds-card-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        </div>
-                        <h3 class="ds-card-title">Document Workflows</h3>
-                        <p class="ds-card-desc">Specs, tickets, research notes, and PRDs are dense. Compress for reviews and synthesis while retaining requirements and decisions.</p>
-                        <ul class="ds-card-bullets">
-                            <li>Faster design and compliance reviews</li>
-                            <li>Keep must-have constraints and questions</li>
-                            <li>Pair with human-in-the-loop editing</li>
-                        </ul>
-                    </div>
-
-                    <!-- Use Case 6: Production Inference -->
-                    <div class="ds-card">
-                        <div class="ds-card-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-                        </div>
-                        <h3 class="ds-card-title">Production Inference</h3>
-                        <p class="ds-card-desc">Reduce token usage and latency in live apps while preserving output quality. Run locally on CPU or deploy beside your API gateway.</p>
-                        <ul class="ds-card-bullets">
-                            <li>5–20ms local compression path</li>
-                            <li>Drop-in before OpenAI, Anthropic, Groq</li>
-                            <li>Meaning retention built for production</li>
-                        </ul>
+                        <div class="ds-val-sub">Vector cosine matching serves identical semantic intent instantly.</div>
                     </div>
                 </div>
             </div>
@@ -1009,67 +775,11 @@ def get_dashboard():
                         </tbody>
                     </table>
                 </div>
-
-                <div style="margin-top:1.5rem; text-align:center; font-size:0.85rem; color:var(--ds-muted);">
-                    Evaluated on LongBench, RFC/Wiki haystacks, and fresh compiler suites. Pooled gold answer containment: 99.4% (180/181).
-                </div>
-            </div>
-        </section>
-
-        <!-- CODING AGENTS & MCP SECTION -->
-        <section class="ds-section" id="agents" style="background: rgba(0,0,0,0.25);">
-            <div class="ds-container">
-                <div class="ds-section-header">
-                    <span class="ds-hero-badge">
-                        <span>Coding Agent Plugin · MCP-First</span>
-                    </span>
-                    <h2 class="ds-text-heading1">
-                        One Install. Every Agent. Fewer Tokens.
-                    </h2>
-                    <p class="ds-text-body">
-                        Auto-detect Cursor, Claude Code, Codex, OpenCode, Windsurf, and more. The MCP plugin compresses huge dumps before they burn tokens — keep your normal login.
-                    </p>
-                </div>
-
-                <div class="ds-agent-grid">
-                    <div class="ds-agent-card">
-                        <h3 style="font-size:1.2rem; font-weight:600; color:#ffffff; margin-bottom:0.75rem;">Cursor & Windsurf (MCP Proxy)</h3>
-                        <p style="font-size:0.9rem; color:var(--ds-description); margin-bottom:1rem;">
-                            Add Semantic Gateway as your MCP server in Cursor settings to compress multi-file workspace dumps automatically before model turns.
-                        </p>
-                        <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:1rem; font-family:var(--font-mono); font-size:12px; color:#cbd5e1;">
-                            <div class="ds-code-comment"># .cursor/mcp.json</div>
-                            {<br/>
-                            &nbsp;&nbsp;<span class="ds-code-string">"mcpServers"</span>: {<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="ds-code-string">"semantic-gateway"</span>: {<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="ds-code-string">"command"</span>: <span class="ds-code-string">"npx"</span>,<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="ds-code-string">"args"</span>: [<span class="ds-code-string">"-y"</span>, <span class="ds-code-string">"@semantic-llm/mcp-proxy"</span>, <span class="ds-code-string">"--port"</span>, <span class="ds-code-string">"8000"</span>]<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
-                            &nbsp;&nbsp;}<br/>
-                            }
-                        </div>
-                    </div>
-
-                    <div class="ds-agent-card">
-                        <h3 style="font-size:1.2rem; font-weight:600; color:#ffffff; margin-bottom:0.75rem;">Claude Code & Terminal Agents</h3>
-                        <p style="font-size:0.9rem; color:var(--ds-description); margin-bottom:1rem;">
-                            Pass the Gateway URL as your base endpoint. Shrinks bash outputs, git diffs, and project trees before each turn.
-                        </p>
-                        <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:1rem; font-family:var(--font-mono); font-size:12px; color:#cbd5e1;">
-                            <div class="ds-code-comment"># Environment configuration</div>
-                            <span class="ds-code-keyword">export</span> ANTHROPIC_BASE_URL=<span class="ds-code-string">"http://localhost:8000/v1"</span><br/>
-                            <span class="ds-code-keyword">export</span> OPENAI_BASE_URL=<span class="ds-code-string">"http://localhost:8000/v1"</span><br/>
-                            <br/>
-                            <div class="ds-code-comment"># Start agent with compressed context</div>
-                            claude --dangerously-skip-permissions
-                        </div>
-                    </div>
-                </div>
             </div>
         </section>
 
         <!-- DEVELOPER STUDIO (SANDBOX & TELEMETRY DASHBOARD) -->
-        <section class="ds-section" id="demo">
+        <section class="ds-section" id="demo" style="background: rgba(0,0,0,0.2);">
             <div class="ds-container">
                 <div class="ds-studio-tabs" role="tablist">
                     <button class="ds-studio-tab-btn active" id="tabbtn-sandbox" onclick="switchTab('sandbox')" role="tab" aria-selected="true" aria-controls="tab-sandbox">Interactive Local Playground</button>
@@ -1094,84 +804,65 @@ def get_dashboard():
                                 <button type="button" class="ds-mode-pill" id="mode-fixed" onclick="setCompressionMode('fixed')">Fixed 35% Budget</button>
                             </div>
 
-                            <!-- Presets for all use cases -->
+                            <!-- Presets -->
                             <div class="ds-chip-row" aria-label="Preset Prompts">
                                 <button type="button" class="ds-chip" onclick="loadPreset('support')">⚡ Support Ticket</button>
                                 <button type="button" class="ds-chip" onclick="loadPreset('paraphrase')">🎯 Semantic Cache Hit</button>
-                                <button type="button" class="ds-chip" onclick="loadPreset('diff')">🧹 Multi-file Diff / Code Trace</button>
+                                <button type="button" class="ds-chip" onclick="loadPreset('diff')">🧹 Diff & Code Trace</button>
                                 <button type="button" class="ds-chip" onclick="loadPreset('rag')">📚 RAG Search Chunks</button>
                                 <button type="button" class="ds-chip" onclick="loadPreset('complex')">🧠 Architecture PRD</button>
                             </div>
 
                             <textarea class="ds-textarea" id="chat-input" placeholder="Paste your long context, logs, code diffs, or chat history here..." oninput="updateCharCount()" onkeydown="handleKey(event)"></textarea>
 
-                            <input type="text" class="ds-query-input" id="query-input" placeholder="User Query (e.g. 'What failed in the last deploy?' or 'What is the refund decision?')" value="What was the supervisor decision regarding the refund request?">
+                            <input type="text" class="ds-query-input" id="query-input" placeholder="User Query (e.g. 'What was the refund decision?')" value="What was the supervisor decision regarding the refund request on invoice INV-2026-08?">
 
                             <div class="ds-prompt-footer">
-                                <div style="font-size:12px; color:var(--ds-muted);">
-                                    Press <kbd style="background:rgba(255,255,255,0.06); padding:2px 6px; border:1px solid var(--ds-border-default); border-radius:4px; font-family:var(--font-mono);">Cmd/Ctrl+Enter</kbd>
+                                <div style="font-size:11.5px; color:var(--ds-muted);">
+                                    Press <kbd style="background:rgba(255,255,255,0.06); padding:2px 5px; border:1px solid var(--ds-border-default); border-radius:4px; font-family:var(--font-mono);">Cmd/Ctrl+Enter</kbd>
                                 </div>
                                 <button class="ds-btn-primary" id="btn-send" onclick="sendMessage()">
-                                    <span id="btn-spinner" style="display:none; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></span>
+                                    <span id="btn-spinner" style="display:none; width:13px; height:13px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></span>
                                     <span id="btn-text">Compress & Route</span>
                                 </button>
                             </div>
 
-                            <div id="error-alert" style="display:none; margin-top:1rem; padding:0.85rem 1rem; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); border-radius:var(--radius-sm); color:#fca5a5; font-size:13.5px;"></div>
+                            <div id="error-alert" style="display:none; margin-top:1rem; padding:0.75rem 1rem; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); border-radius:var(--radius-sm); color:#fca5a5; font-size:13px;"></div>
 
-                            <!-- Results Inspector -->
+                            <!-- Results Inspector (Streamlined into 3 Clean Tabs) -->
                             <div class="ds-result-section" id="result-container" style="display:none;">
                                 <div class="ds-panel-eyebrow">
                                     <span>2. Optimization & Evidence Breakdown</span>
                                 </div>
 
                                 <div class="ds-res-tabs">
-                                    <button type="button" class="ds-res-tab-btn active" id="btn-res-output" onclick="switchResultTab('output')">Model Output</button>
+                                    <button type="button" class="ds-res-tab-btn active" id="btn-res-output" onclick="switchResultTab('output')">Model Response</button>
                                     <button type="button" class="ds-res-tab-btn" id="btn-res-compression" onclick="switchResultTab('compression')">Context Diff (<span id="res-tab-comp-pct">0%</span>)</button>
-                                    <button type="button" class="ds-res-tab-btn" id="btn-res-blocks" onclick="switchResultTab('blocks')">Kept vs Dropped Blocks</button>
-                                    <button type="button" class="ds-res-tab-btn" id="btn-res-diag" onclick="switchResultTab('diag')">Routing & Cache</button>
-                                    <button type="button" class="ds-res-tab-btn" id="btn-res-sustain" onclick="switchResultTab('sustain')">CO₂ & Energy Impact</button>
+                                    <button type="button" class="ds-res-tab-btn" id="btn-res-diag" onclick="switchResultTab('diag')">Diagnostics & Impact</button>
                                 </div>
 
-                                <!-- Tab: Output -->
+                                <!-- Tab 1: Output -->
                                 <div class="ds-res-pane active" id="pane-output">
                                     <div id="res-text" style="color:var(--ds-primary); white-space:pre-wrap;"></div>
                                 </div>
 
-                                <!-- Tab: Compression Diff -->
+                                <!-- Tab 2: Compression Diff & Blocks -->
                                 <div class="ds-res-pane" id="pane-compression">
-                                    <div style="margin-bottom:0.75rem; font-weight:600; color:#ffffff;" id="res-comp-summary"></div>
+                                    <div style="margin-bottom:0.65rem; font-weight:600; color:#ffffff;" id="res-comp-summary"></div>
                                     <div class="ds-diff-box">
                                         <div class="ds-diff-orig">
-                                            <div style="font-size:11px; font-weight:bold; margin-bottom:0.25rem;">ORIGINAL PROMPT CONTEXT (<span id="diff-orig-tokens">0</span> tokens)</div>
+                                            <div style="font-size:10.5px; font-weight:bold; margin-bottom:0.2rem;">ORIGINAL PROMPT CONTEXT (<span id="diff-orig-tokens">0</span> tokens)</div>
                                             <div id="diff-orig-text"></div>
                                         </div>
                                         <div class="ds-diff-opt">
-                                            <div style="font-size:11px; font-weight:bold; margin-bottom:0.25rem;">COMPRESSED EVIDENCE (<span id="diff-opt-tokens">0</span> tokens — <span id="diff-saved-tokens">0</span> saved)</div>
+                                            <div style="font-size:10.5px; font-weight:bold; margin-bottom:0.2rem;">COMPRESSED EVIDENCE (<span id="diff-opt-tokens">0</span> tokens — <span id="diff-saved-tokens">0</span> saved)</div>
                                             <div id="diff-opt-text"></div>
                                         </div>
                                     </div>
-                                    <ul id="res-savings-notes" style="margin-top:0.75rem; padding-left:1.25rem; font-size:12.5px; color:var(--ds-description);"></ul>
+                                    <ul id="res-savings-notes" style="margin-top:0.65rem; padding-left:1.25rem; font-size:12px; color:var(--ds-description);"></ul>
                                 </div>
 
-                                <!-- Tab: Kept vs Dropped Blocks -->
-                                <div class="ds-res-pane" id="pane-blocks">
-                                    <div style="font-size:12.5px; color:var(--ds-description); margin-bottom:1rem;">
-                                        Query-aware compiler segments context into semantic blocks and drops unneeded noise while locking critical evidence:
-                                    </div>
-                                    <div class="ds-blocks-grid">
-                                        <div>
-                                            <div style="font-size:11px; font-weight:700; color:var(--ds-green); margin-bottom:0.5rem; text-transform:uppercase;">Kept Evidence Blocks</div>
-                                            <div id="kept-blocks-list" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
-                                        </div>
-                                        <div>
-                                            <div style="font-size:11px; font-weight:700; color:var(--ds-red); margin-bottom:0.5rem; text-transform:uppercase;">Removed Low-Value Blocks</div>
-                                            <div id="dropped-blocks-list" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Tab: Diagnostics -->
+                                <!-- Tab 3: Diagnostics & Sustainability Impact -->
                                 <div class="ds-res-pane" id="pane-diag">
                                     <div class="ds-diag-grid">
                                         <div class="ds-diag-card">
@@ -1187,88 +878,53 @@ def get_dashboard():
                                             <div class="ds-diag-val" id="diag-latency">—</div>
                                         </div>
                                         <div class="ds-diag-card">
-                                            <div class="ds-diag-lbl">Cost Comparison</div>
-                                            <div class="ds-diag-val" id="diag-cost">—</div>
+                                            <div class="ds-diag-lbl">Estimated Cost Saved</div>
+                                            <div class="ds-diag-val" id="diag-cost" style="color:var(--ds-green);">—</div>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <!-- Tab: Sustainability Impact -->
-                                <div class="ds-res-pane" id="pane-sustain">
-                                    <div style="font-size:12.5px; color:var(--ds-description); margin-bottom:0.75rem;">
-                                        Environmental impact of tokens removed prior to upstream GPU prefill work:
-                                    </div>
-                                    <div class="ds-sustain-grid">
-                                        <div class="ds-sustain-card">
-                                            <div class="ds-sustain-val" id="sustain-co2">0.0000 g</div>
-                                            <div class="ds-sustain-lbl">CO₂ Avoided</div>
+                                        <div class="ds-diag-card">
+                                            <div class="ds-diag-lbl">CO₂ Avoided</div>
+                                            <div class="ds-diag-val" id="diag-co2" style="color:var(--ds-green);">0.0000 g</div>
                                         </div>
-                                        <div class="ds-sustain-card">
-                                            <div class="ds-sustain-val" id="sustain-watt">0.000 Wh</div>
-                                            <div class="ds-sustain-lbl">Energy Saved</div>
-                                        </div>
-                                        <div class="ds-sustain-card">
-                                            <div class="ds-sustain-val" id="sustain-gpu">0.000 s</div>
-                                            <div class="ds-sustain-lbl">GPU-sec Spared</div>
+                                        <div class="ds-diag-card">
+                                            <div class="ds-diag-lbl">GPU-sec Spared</div>
+                                            <div class="ds-diag-val" id="diag-gpu">0.000 s</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right: Live Telemetry Panel -->
+                        <!-- Right: Streamlined Live Telemetry Panel -->
                         <div class="ds-glass-panel">
                             <div class="ds-panel-eyebrow">
-                                <span>TOKEN & INFERENCE IMPACT</span>
-                                <span style="font-size:11px; color:var(--ds-green); font-weight:600;"><span class="ds-status-dot-live" style="display:inline-block; vertical-align:middle; margin-right:4px;"></span> LIVE</span>
+                                <span>LIVE INFERENCE IMPACT</span>
+                                <span style="font-size:11px; color:var(--ds-green); font-weight:600;"><span class="ds-status-dot-live" style="display:inline-block; vertical-align:middle; margin-right:4px;"></span> ACTIVE</span>
                             </div>
 
                             <ul style="list-style:none;">
                                 <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Total Requests Analyzed</span>
+                                    <span class="ds-stat-name">Total Requests</span>
                                     <span class="ds-stat-val" id="val-requests">0</span>
                                 </li>
                                 <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Cache Hits</span>
-                                    <span class="ds-stat-val" id="val-hits">0</span>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Cache Efficiency</span>
+                                    <span class="ds-stat-name">Cache Hit Rate</span>
                                     <span class="ds-stat-val brand" id="val-hitrate">0.0%</span>
                                 </li>
                                 <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Tokens Processed</span>
-                                    <span class="ds-stat-val" id="val-tokens-in">0</span>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Tokens Saved (Compression)</span>
+                                    <span class="ds-stat-name">Tokens Saved</span>
                                     <span class="ds-stat-val green" id="val-tokens-saved">0</span>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">API Spend Estimated</span>
-                                    <span class="ds-stat-val" id="val-spent">$0.00000</span>
                                 </li>
                                 <li class="ds-stat-row">
                                     <span class="ds-stat-name">API Cost Saved</span>
                                     <span class="ds-stat-val green" id="val-saved">$0.00000</span>
                                 </li>
                                 <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Latency (Direct Miss)</span>
-                                    <div style="text-align:right;">
-                                        <span class="ds-stat-val" id="val-latency-direct">—</span>
-                                        <div style="font-size:11px; color:var(--ds-muted);">avg. upstream</div>
-                                    </div>
+                                    <span class="ds-stat-name">Avg Direct Miss Latency</span>
+                                    <span class="ds-stat-val" id="val-latency-direct">—</span>
                                 </li>
                                 <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Latency (Semantic Hit)</span>
-                                    <div style="text-align:right;">
-                                        <span class="ds-stat-val brand" id="val-latency-cached">—</span>
-                                        <div style="font-size:11px; color:var(--ds-muted);">avg. vector cache</div>
-                                    </div>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Latest Model Route</span>
-                                    <span class="ds-stat-val" id="val-latest-route" style="font-family:var(--font-mono); font-size:12px;">—</span>
+                                    <span class="ds-stat-name">Avg Vector Cache Hit</span>
+                                    <span class="ds-stat-val brand" id="val-latency-cached">—</span>
                                 </li>
                             </ul>
                         </div>
@@ -1298,9 +954,9 @@ def get_dashboard():
 
                     <div class="ds-chart-box">
                         <div class="ds-panel-eyebrow">
-                            <span>Latency Comparison: Direct Upstream Miss vs FastEmbed Cache Hit (ms)</span>
+                            <span>Latency Comparison: Direct Upstream Miss vs Vector Cache Hit (ms)</span>
                         </div>
-                        <div style="height: calc(100% - 30px);">
+                        <div style="height: calc(100% - 25px);">
                             <canvas id="latencyChart"></canvas>
                         </div>
                     </div>
@@ -1313,7 +969,7 @@ def get_dashboard():
                                     <th>Prompt</th>
                                     <th>Routing Tier</th>
                                     <th>Model Executed</th>
-                                    <th>Cache Lookup</th>
+                                    <th>Cache Status</th>
                                     <th>Tokens (In / Opt)</th>
                                     <th>Latency</th>
                                     <th>Cost Saved</th>
@@ -1321,7 +977,7 @@ def get_dashboard():
                             </thead>
                             <tbody id="queries-tbody">
                                 <tr>
-                                    <td colspan="8" style="text-align:center; color:var(--ds-muted); padding:2.5rem;">No queries recorded yet. Send a request in the Sandbox!</td>
+                                    <td colspan="8" style="text-align:center; color:var(--ds-muted); padding:2rem;">No queries recorded yet. Send a request in the Sandbox!</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1335,94 +991,64 @@ def get_dashboard():
     <div class="ds-modal-backdrop" id="docs-modal" onclick="if(event.target===this) closeDocsModal()">
         <div class="ds-modal-card">
             <div class="ds-modal-head">
-                <h3 style="font-size:1.35rem; font-weight:700; color:#ffffff;">Semantic LLM Gateway & Compression API Guide</h3>
+                <h3 style="font-size:1.25rem; font-weight:700; color:#ffffff;">Semantic LLM Integration Guide</h3>
                 <button class="ds-modal-close" onclick="closeDocsModal()">&times;</button>
             </div>
-            <p style="color:var(--ds-description); margin-bottom:1.5rem; font-size:0.95rem;">
-                Semantic Gateway is a high-performance proxy and neural compression engine. Drop it in front of OpenAI, Anthropic, Groq, or local models.
+            <p style="color:var(--ds-description); margin-bottom:1.25rem; font-size:0.9rem;">
+                Drop Semantic Gateway in front of OpenAI, Anthropic, Groq, or local models.
             </p>
 
-            <h4 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:#ffffff;">1. Context Compression Endpoint (POST /v1/compress)</h4>
-            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:1rem; font-family:var(--font-mono); font-size:12.5px; color:#cbd5e1; margin-bottom:1.5rem;">
+            <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:0.4rem; color:#ffffff;">1. Context Compression Endpoint (POST /v1/compress)</h4>
+            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:0.85rem; font-family:var(--font-mono); font-size:12px; color:#cbd5e1; margin-bottom:1.25rem;">
 curl -X POST http://localhost:8000/v1/compress \
   -H <span class="ds-code-string">"Content-Type: application/json"</span> \
   -d '{
-    <span class="ds-code-string">"context"</span>: <span class="ds-code-string">"Your long conversation, RAG dump, or tool traces..."</span>,
-    <span class="ds-code-string">"query"</span>: <span class="ds-code-string">"What failed in the last deploy?"</span>,
+    <span class="ds-code-string">"context"</span>: <span class="ds-code-string">"Long context..."</span>,
+    <span class="ds-code-string">"query"</span>: <span class="ds-code-string">"What failed?"</span>,
     <span class="ds-code-string">"mode"</span>: <span class="ds-code-string">"compiler"</span>
   }'
             </div>
 
-            <h4 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:#ffffff;">2. Python Library SDK</h4>
-            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:1rem; font-family:var(--font-mono); font-size:12.5px; color:#cbd5e1; margin-bottom:1.5rem;">
-<span class="ds-code-keyword">from</span> services.compression <span class="ds-code-keyword">import</span> compress_for_turn, compress_context
+            <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:0.4rem; color:#ffffff;">2. Python Library SDK</h4>
+            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:0.85rem; font-family:var(--font-mono); font-size:12px; color:#cbd5e1; margin-bottom:1.25rem;">
+<span class="ds-code-keyword">from</span> services.compression <span class="ds-code-keyword">import</span> compress_for_turn
 
-result = compress_for_turn(
-    context=chat_history,
-    user_query=<span class="ds-code-string">"Explain connection pool timeout"</span>,
-    mode=<span class="ds-code-string">"compiler"</span>
-)
-print(result[<span class="ds-code-string">"compressed_text"</span>])
-print(result[<span class="ds-code-string">"tokens_saved_pct"</span>])
+result = compress_for_turn(context=chat_history, user_query=<span class="ds-code-string">"Explain connection pool timeout"</span>)
+print(result[<span class="ds-code-string">"compressed_text"</span>], result[<span class="ds-code-string">"tokens_saved_pct"</span>])
             </div>
 
-            <h4 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:#ffffff;">3. OpenAI Drop-In Proxy (POST /v1/chat/completions)</h4>
-            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:1rem; font-family:var(--font-mono); font-size:12.5px; color:#cbd5e1;">
-<span class="ds-code-keyword">from</span> openai <span class="ds-code-keyword">import</span> OpenAI
-
-client = OpenAI(base_url=<span class="ds-code-string">"http://localhost:8000/v1"</span>, api_key=<span class="ds-code-string">"not-required"</span>)
-response = client.chat.completions.create(
-    model=<span class="ds-code-string">"llama-3.1-8b-instant"</span>,
-    messages=[{<span class="ds-code-string">"role"</span>: <span class="ds-code-string">"user"</span>, <span class="ds-code-string">"content"</span>: <span class="ds-code-string">"What does fetch_user return?"</span>}]
-)
-print(response.choices[0].message.content)
+            <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:0.4rem; color:#ffffff;">3. Coding Agent MCP Plugin Setup (Cursor / Windsurf)</h4>
+            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:0.85rem; font-family:var(--font-mono); font-size:12px; color:#cbd5e1;">
+<div class="ds-code-comment"># .cursor/mcp.json</div>
+{
+  <span class="ds-code-string">"mcpServers"</span>: {
+    <span class="ds-code-string">"semantic-gateway"</span>: {
+      <span class="ds-code-string">"command"</span>: <span class="ds-code-string">"npx"</span>,
+      <span class="ds-code-string">"args"</span>: [<span class="ds-code-string">"-y"</span>, <span class="ds-code-string">"@semantic-llm/mcp-proxy"</span>, <span class="ds-code-string">"--port"</span>, <span class="ds-code-string">"8000"</span>]
+    }
+  }
+}
             </div>
 
-            <div style="margin-top:2rem; text-align:right;">
+            <div style="margin-top:1.5rem; text-align:right;">
                 <button class="ds-btn-primary" onclick="closeDocsModal()">Got it</button>
             </div>
         </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer class="ds-footer">
+    <!-- CLEAN FOOTER -->
+    <footer class="ds-footer-clean">
         <div class="ds-container">
-            <div class="ds-footer-grid">
-                <div class="ds-footer-brand">
-                    <h4>Semantic Gateway</h4>
-                    <p>Semantic LLM neural prompt compression, sub-50ms semantic vector caching, and cost-aware model routing.</p>
-                    <p style="margin-top:1rem; color:var(--ds-muted); font-size:0.8rem;">Apache 2.0 Open Source</p>
+            <div class="ds-footer-clean-row">
+                <div>
+                    <strong style="color:#ffffff;">Semantic Gateway</strong> &middot; Apache 2.0 Open Source
                 </div>
-                <div class="ds-footer-col">
-                    <h5>Navigation</h5>
-                    <ul>
-                        <li><a href="#features">Architecture</a></li>
-                        <li><a href="#how-it-works">How It Works</a></li>
-                        <li><a href="#use-cases">Use Cases</a></li>
-                        <li><a href="#benchmarks">Benchmarks</a></li>
-                        <li><a href="#agents">Coding Agents (MCP)</a></li>
-                        <li><a href="#demo" onclick="switchTab('sandbox')">Interactive Sandbox</a></li>
-                        <li><a href="#demo" onclick="switchTab('analytics')">Telemetry Dashboard</a></li>
-                    </ul>
-                </div>
-                <div class="ds-footer-col">
-                    <h5>Resources</h5>
-                    <ul>
-                        <li><a href="javascript:void(0)" onclick="openDocsModal()">API Documentation</a></li>
-                        <li><a href="/api/metrics" target="_blank">Raw Metrics API</a></li>
-                        <li><a href="/health" target="_blank">Health Check</a></li>
-                        <li><a href="https://github.com/anothercodingguy/SemanticLLM" target="_blank">GitHub Repository</a></li>
-                    </ul>
-                </div>
-                <div class="ds-footer-col">
-                    <h5>Engines</h5>
-                    <ul>
-                        <li><a href="#features">Semantic Neural Compiler</a></li>
-                        <li><a href="#features">384-Dim FastEmbed Vectors</a></li>
-                        <li><a href="#features">Groq Llama 3.1 & 3.3</a></li>
-                        <li><a href="#features">Ollama Fallback</a></li>
-                    </ul>
-                </div>
+                <ul class="ds-footer-clean-links">
+                    <li><a href="#demo" onclick="switchTab('sandbox')">Sandbox</a></li>
+                    <li><a href="#benchmarks">Benchmarks</a></li>
+                    <li><a href="javascript:void(0)" onclick="openDocsModal()">Docs</a></li>
+                    <li><a href="https://github.com/anothercodingguy/SemanticLLM" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                </ul>
             </div>
         </div>
     </footer>
@@ -1442,10 +1068,10 @@ print(response.choices[0].message.content)
                 h = canvas.height = window.innerHeight;
             });
 
-            const stars = Array.from({ length: 70 }, () => ({
+            const stars = Array.from({ length: 50 }, () => ({
                 x: Math.random() * w,
                 y: Math.random() * h,
-                r: Math.random() * 1.5 + 0.5,
+                r: Math.random() * 1.4 + 0.4,
                 alpha: Math.random() * 0.7 + 0.2,
                 vx: (Math.random() - 0.5) * 0.15,
                 vy: (Math.random() - 0.5) * 0.15
@@ -1458,9 +1084,9 @@ print(response.choices[0].message.content)
                         const dx = stars[i].x - stars[j].x;
                         const dy = stars[i].y - stars[j].y;
                         const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 120) {
-                            ctx.strokeStyle = `rgba(77, 136, 255, ${0.15 * (1 - dist / 120)})`;
-                            ctx.lineWidth = 0.6;
+                        if (dist < 110) {
+                            ctx.strokeStyle = `rgba(77, 136, 255, ${0.12 * (1 - dist / 110)})`;
+                            ctx.lineWidth = 0.5;
                             ctx.beginPath();
                             ctx.moveTo(stars[i].x, stars[i].y);
                             ctx.lineTo(stars[j].x, stars[j].y);
@@ -1631,7 +1257,6 @@ print(response.choices[0].message.content)
             btnSpinner.style.display = 'inline-block';
 
             try {
-                // Combine context and query for LLM chat completion
                 const fullPrompt = queryText ? `${contextText}\n\nUser Question:\n${queryText}` : contextText;
                 
                 const res = await fetch('/v1/chat/completions', {
@@ -1676,52 +1301,24 @@ print(response.choices[0].message.content)
                     notesUl.appendChild(li);
                 });
 
-                // 3. Kept vs Dropped Blocks pane
-                const keptList = document.getElementById('kept-blocks-list');
-                const droppedList = document.getElementById('dropped-blocks-list');
-                keptList.innerHTML = '';
-                droppedList.innerHTML = '';
-
-                (comp.kept_blocks || []).forEach(b => {
-                    const card = document.createElement('div');
-                    card.className = 'ds-block-card kept';
-                    card.innerHTML = `<div class="ds-block-head"><span>${escapeHtml(b.heading || 'Evidence Block')}</span><span style="font-family:var(--font-mono); font-size:11px; color:var(--ds-green);">${b.tokens || 0} tokens</span></div><div class="ds-block-reason">${escapeHtml(b.reason || 'Critical answer evidence')}</div>`;
-                    keptList.appendChild(card);
-                });
-                if (!(comp.kept_blocks && comp.kept_blocks.length)) {
-                    keptList.innerHTML = '<div style="color:var(--ds-muted); font-size:12px;">All essential context preserved.</div>';
-                }
-
-                (comp.dropped_blocks || []).forEach(b => {
-                    const card = document.createElement('div');
-                    card.className = 'ds-block-card dropped';
-                    card.innerHTML = `<div class="ds-block-head"><span>${escapeHtml(b.heading || 'Context Block')}</span><span style="font-family:var(--font-mono); font-size:11px; color:var(--ds-red);">${b.tokens || 0} tokens</span></div><div class="ds-block-reason">${escapeHtml(b.reason || 'Irrelevant noise')}</div>`;
-                    droppedList.appendChild(card);
-                });
-                if (!(comp.dropped_blocks && comp.dropped_blocks.length)) {
-                    droppedList.innerHTML = '<div style="color:var(--ds-muted); font-size:12px;">No large blocks dropped.</div>';
-                }
-
-                // 4. Diagnostics pane
+                // 3. Diagnostics & Sustainability Impact pane
                 const cache = data.cache || {};
                 const routing = data.routing || {};
                 const latency = data.latency || {};
                 const cost = data.cost || {};
+                const sustain = comp.sustainability || {};
 
                 document.getElementById('diag-cache').innerHTML = cache.hit
                     ? `<span style="color:var(--ds-green); font-weight:bold;">HIT (${cache.similarity}% match)</span>`
-                    : `<span style="color:var(--ds-amber); font-weight:bold;">MISS</span> (Best: ${cache.similarity || 0}%, Thresh: ${cache.threshold || 82}%)`;
+                    : `<span style="color:var(--ds-amber); font-weight:bold;">MISS</span> (${cache.similarity || 0}%)`;
 
                 document.getElementById('diag-model').textContent = `${routing.model || data.model} [${routing.complexity || 'SIMPLE'}]`;
-                document.getElementById('diag-latency').textContent = `${latency.total_ms || 0}ms (Cache: ${latency.cache_lookup_ms || 0}ms, Upstream: ${latency.upstream_inference_ms || 0}ms)`;
-                document.getElementById('diag-cost').innerHTML = `<span style="color:var(--ds-green); font-weight:bold;">Saved $${(cost.cost_saved || 0).toFixed(5)}</span> (Spent $${(cost.actual_spent || 0).toFixed(5)})`;
-
-                // 5. Sustainability pane
-                const sustain = comp.sustainability || {};
+                document.getElementById('diag-latency').textContent = `${latency.total_ms || 0}ms`;
+                document.getElementById('diag-cost').textContent = `Saved $${(cost.cost_saved || 0).toFixed(5)}`;
+                
                 const co2Grams = ((sustain.co2_kg_avoided || 0) * 1000).toFixed(4);
-                document.getElementById('sustain-co2').textContent = `${co2Grams} g`;
-                document.getElementById('sustain-watt').textContent = `${(sustain.watt_hours_saved || 0).toFixed(4)} Wh`;
-                document.getElementById('sustain-gpu').textContent = `${(sustain.gpu_seconds_avoided || 0).toFixed(3)} s`;
+                document.getElementById('diag-co2').textContent = `${co2Grams} g`;
+                document.getElementById('diag-gpu').textContent = `${(sustain.gpu_seconds_avoided || 0).toFixed(3)} s`;
 
                 // Update Telemetry Metrics
                 await fetchMetrics();
@@ -1745,19 +1342,12 @@ print(response.choices[0].message.content)
 
                 // Sandbox stats
                 document.getElementById('val-requests').textContent = data.total_requests;
-                document.getElementById('val-hits').textContent = data.cache_hits;
                 document.getElementById('val-hitrate').textContent = data.hit_rate.toFixed(1) + '%';
-                document.getElementById('val-tokens-in').textContent = data.total_tokens_in.toLocaleString();
                 document.getElementById('val-tokens-saved').textContent = `${data.total_tokens_saved.toLocaleString()} (${data.token_reduction_rate.toFixed(1)}%)`;
-                document.getElementById('val-spent').textContent = '$' + data.total_spent.toFixed(5);
                 document.getElementById('val-saved').textContent = '$' + data.total_saved.toFixed(5);
                 
                 document.getElementById('val-latency-direct').textContent = data.avg_latency_miss > 0 ? Math.round(data.avg_latency_miss) + 'ms' : '—';
                 document.getElementById('val-latency-cached').textContent = data.avg_latency_hit > 0 ? Math.round(data.avg_latency_hit) + 'ms' : '—';
-
-                if (data.latest_model_route && data.latest_model_route !== '—') {
-                    document.getElementById('val-latest-route').textContent = data.latest_model_route;
-                }
 
                 // Dashboard cards
                 document.getElementById('dash-requests').textContent = data.total_requests;
@@ -1778,7 +1368,7 @@ print(response.choices[0].message.content)
 
                         tr.innerHTML = `
                             <td style="color:var(--ds-muted); font-size:0.8rem; font-family:var(--font-mono);">${escapeHtml(timeStr)}</td>
-                            <td style="max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(q.prompt)}">${escapeHtml(q.prompt)}</td>
+                            <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(q.prompt)}">${escapeHtml(q.prompt)}</td>
                             <td><span class="ds-badge ${routeBadge}">${escapeHtml(q.complexity || 'SIMPLE')}</span></td>
                             <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--ds-secondary);">${escapeHtml(q.model_routed)}</td>
                             <td><span class="ds-status-pill ${cacheDot}">● ${cacheLabel}</span></td>
@@ -1791,7 +1381,7 @@ print(response.choices[0].message.content)
 
                     updateChart(data.queries);
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--ds-muted); padding:2.5rem;">No queries recorded yet. Send a request in the Sandbox!</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--ds-muted); padding:2rem;">No queries recorded yet. Send a request in the Sandbox!</td></tr>';
                     updateChart([]);
                 }
             } catch (err) {
@@ -1825,23 +1415,21 @@ print(response.choices[0].message.content)
                     labels,
                     datasets: [
                         {
-                            label: 'FastEmbed Vector Cache Hit (ms)',
+                            label: 'Vector Cache Hit (ms)',
                             data: hitData,
                             borderColor: '#4d88ff',
                             backgroundColor: '#4d88ff',
                             pointRadius: 5,
-                            pointHoverRadius: 7,
                             borderWidth: 2,
                             tension: 0.15,
                             spanGaps: true
                         },
                         {
-                            label: 'Direct Upstream Inference Miss (ms)',
+                            label: 'Direct Upstream Miss (ms)',
                             data: missData,
                             borderColor: '#febc2e',
                             backgroundColor: '#febc2e',
                             pointRadius: 5,
-                            pointHoverRadius: 7,
                             borderWidth: 2,
                             tension: 0.15,
                             spanGaps: true
@@ -1852,7 +1440,7 @@ print(response.choices[0].message.content)
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top', labels: { boxWidth: 12, color: '#9aa0b0', font: { family: 'DM Sans', size: 12 } } },
+                        legend: { position: 'top', labels: { boxWidth: 12, color: '#9aa0b0', font: { family: 'DM Sans', size: 11.5 } } },
                         tooltip: {
                             backgroundColor: '#16181f',
                             titleColor: '#ffffff',

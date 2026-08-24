@@ -26,9 +26,9 @@ def test_root_dashboard():
     assert response.status_code == 200
     assert "Semantic Gateway" in response.text
     assert "Semantic" in response.text
-    assert "Interactive Sandbox" in response.text
+    assert "Interactive Local Playground" in response.text
     assert "Benchmarks" in response.text
-    assert "Coding Agents" in response.text
+    assert "Telemetry" in response.text
     print("✅ Dashboard HTML page test passed")
 
 def test_semantic_compression_engine():
