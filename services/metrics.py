@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from core.config import settings
 
@@ -109,7 +109,7 @@ async def record_metric(
     cost_saved = max(0.0, direct_cost - actual_spent) if is_cache_hit or (direct_cost > actual_spent) else 0.0
 
     query_data = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "prompt": prompt,
         "complexity": complexity,
         "model_routed": model_routed,
@@ -153,7 +153,10 @@ async def record_metric(
                 pipe.incrbyfloat("gateway_metric:total_cost_saved", cost_saved)
                 pipe.incrbyfloat("gateway_metric:total_cost_spent", actual_spent)
                 pipe.incrby("gateway_metric:total_requests", 1)
+                pipe.incrby("gateway_metric:tokens_in", original_tokens)
+                pipe.incrby("gateway_metric:tokens_optimized", optimized_tokens)
                 pipe.incrby("gateway_metric:tokens_saved", tokens_saved)
+                pipe.set("gateway_metric:latest_model_route", model_routed)
                 if is_cache_hit:
                     pipe.incrby("gateway_metric:cache_hits", 1)
                     pipe.incrbyfloat("gateway_metric:total_latency_hit", latency_ms)
@@ -168,7 +171,62 @@ async def record_metric(
 async def get_metrics_summary() -> Dict[str, Any]:
     """
     Returns complete metrics summary, derived accurately from transaction history.
+    Uses Redis cluster metrics if available, falling back to in-memory store.
     """
+    client = _try_get_redis_client()
+    if client:
+        try:
+            pipe = client.pipeline()
+            pipe.get("gateway_metric:total_requests")
+            pipe.get("gateway_metric:cache_hits")
+            pipe.get("gateway_metric:total_cost_saved")
+            pipe.get("gateway_metric:total_cost_spent")
+            pipe.get("gateway_metric:tokens_in")
+            pipe.get("gateway_metric:tokens_optimized")
+            pipe.get("gateway_metric:tokens_saved")
+            pipe.get("gateway_metric:total_latency_hit")
+            pipe.get("gateway_metric:total_latency_miss")
+            pipe.get("gateway_metric:latest_model_route")
+            pipe.lrange("gateway_queries", 0, 29)
+            vals = await pipe.execute()
+
+            tot_req = int(vals[0] or 0)
+            if tot_req > 0:
+                c_hits = int(vals[1] or 0)
+                c_miss = max(0, tot_req - c_hits)
+                h_rate = (c_hits / tot_req) * 100.0
+                t_in = int(vals[4] or 0)
+                t_saved = int(vals[6] or 0)
+                lat_hit = float(vals[7] or 0.0)
+                lat_miss = float(vals[8] or 0.0)
+                raw_queries = vals[10] or []
+                queries = []
+                for q in raw_queries:
+                    try:
+                        queries.append(json.loads(q) if isinstance(q, str) else q)
+                    except Exception:
+                        pass
+
+                return {
+                    "total_saved": round(float(vals[2] or 0.0), 5),
+                    "total_spent": round(float(vals[3] or 0.0), 5),
+                    "total_requests": tot_req,
+                    "cache_hits": c_hits,
+                    "cache_misses": c_miss,
+                    "hit_rate": round(h_rate, 2),
+                    "total_tokens_in": t_in,
+                    "total_tokens_optimized": int(vals[5] or 0),
+                    "total_tokens_saved": t_saved,
+                    "token_reduction_rate": round((t_saved / t_in) * 100.0, 2) if t_in > 0 else 0.0,
+                    "avg_latency_hit": round(lat_hit / c_hits, 1) if c_hits > 0 else 0.0,
+                    "avg_latency_miss": round(lat_miss / c_miss, 1) if c_miss > 0 else 0.0,
+                    "latest_model_route": vals[9] or "—",
+                    "queries": queries
+                }
+        except Exception as e:
+            logger.warning(f"Redis metrics read notice ({e}) — falling back to local memory.")
+
+    # Fallback: In-memory store
     total_requests = _in_memory_metrics["total_requests"]
     cache_hits = _in_memory_metrics["cache_hits"]
     cache_misses = max(0, total_requests - cache_hits)

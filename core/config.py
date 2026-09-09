@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional, List
 
 class Settings(BaseSettings):
@@ -25,9 +25,10 @@ class Settings(BaseSettings):
     QDRANT_API_KEY: Optional[str] = None
     HF_API_KEY: Optional[str] = None
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = 'utf-8'
-        extra = "ignore" # Allow extra environment variables without failing validation
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 settings = Settings()

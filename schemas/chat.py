@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any, Union
 
 class Message(BaseModel):
@@ -12,8 +12,7 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: Optional[int] = None
     stream: Optional[bool] = False
     
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 class Choice(BaseModel):
     index: int
@@ -35,8 +34,7 @@ class CompressRequest(BaseModel):
     budget_ratio: Optional[float] = None  # 0.1 - 1.0 (for fixed mode)
     context_blocks: Optional[List[str]] = None
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 class BlockReason(BaseModel):
     heading: str
@@ -70,6 +68,11 @@ class CompressResponse(BaseModel):
     keep_ratio: float = 1.0
     kept_line_ratio: float = 1.0
     sustainability: Optional[SustainabilityImpact] = None
+    savings_notes: List[str] = Field(default_factory=list)
+    original_text: Optional[str] = None
+    optimized_text: Optional[str] = None
+    optimized_tokens: int = 0
+    compression_percent: float = 0.0
 
 class GatewayCompressionMetadata(BaseModel):
     original_tokens: int = 0

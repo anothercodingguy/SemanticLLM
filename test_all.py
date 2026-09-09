@@ -176,13 +176,48 @@ def test_end_to_end_gateway_and_cache():
     asyncio.run(_test())
     print("✅ End-to-end Gateway, Semantic Cache & Metrics flow passed")
 
+def test_cli_and_code_fence_preservation():
+    from main import cli
+    import inspect
+
+    # 1. Verify cli entrypoint callable
+    assert callable(cli)
+    sig = inspect.signature(cli)
+    assert len(sig.parameters) == 0
+
+    # 2. Verify code fence duplicate line preservation
+    code_sample = "```python\ndef foo():\n    return True\n\ndef bar():\n    return True\n```"
+    deduped_code, removed_count = remove_duplicate_lines(code_sample)
+    assert deduped_code.count("return True") == 2
+    assert removed_count == 0
+    print("✅ CLI entrypoint and code fence preservation tests passed")
+
+def test_multi_message_chat_compression():
+    # Test multi-turn system context compression
+    system_log = "### System Overview\n" + "\n".join([f"[2026-08 INFO] Health probe log {i}" for i in range(15)]) + "\nRefund threshold is fixed at $500.00 max."
+    req_body = {
+        "messages": [
+            {"role": "system", "content": system_log},
+            {"role": "user", "content": "What is the refund threshold?"}
+        ]
+    }
+    res = client.post("/v1/chat/completions", json=req_body)
+    assert res.status_code == 200
+    data = res.json()
+    assert "choices" in data
+    assert data["compression"]["tokens_saved"] > 0
+    print("✅ Multi-message system context compression test passed")
+
 if __name__ == "__main__":
     test_health_check()
     test_root_dashboard()
     test_semantic_compression_engine()
     test_semantic_compression_http_endpoints()
+    test_cli_and_code_fence_preservation()
     test_complexity_evaluator()
     test_pricing_and_cost_calculations()
     test_empty_prompt_validation()
     test_end_to_end_gateway_and_cache()
+    test_multi_message_chat_compression()
     print("\n🎉 ALL SEMANTIC LLM & GATEWAY AUDIT TESTS PASSED SUCCESSFULLY!")
+

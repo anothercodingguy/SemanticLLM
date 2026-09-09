@@ -1476,3 +1476,14 @@ print(result[<span class="ds-code-string">"compressed_text"</span>], result[<spa
 </body>
 </html>"""
     return HTMLResponse(content=html_content)
+
+def cli():
+    """CLI entrypoint for running the semantic-gateway server."""
+    import uvicorn
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    uvicorn.run("main:app", host=host, port=port, reload=False)
+
+if __name__ == "__main__":
+    cli()

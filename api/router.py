@@ -1,5 +1,6 @@
 import time
 import json
+import re
 import urllib.parse
 from fastapi import APIRouter, Response, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -28,11 +29,9 @@ from services.metrics import record_metric, calculate_direct_cost, calculate_act
 
 router = APIRouter()
 
-# ── Semantic LLM API Endpoints (POST /v1/compress & POST /compress & GET) ────
+# ── Semantic LLM API Endpoints (POST /compress & GET /compress) ─────────
 @router.post("/compress", response_model=CompressResponse)
-@router.post("/v1/compress", response_model=CompressResponse)
 @router.get("/compress", response_model=CompressResponse)
-@router.get("/v1/compress", response_model=CompressResponse)
 async def compress_endpoint(
     request: Request,
     response: Response
@@ -130,7 +129,7 @@ async def compress_endpoint(
 
 
 # ── OpenAI Compatible Chat Completions (POST /v1/chat/completions) ──────
-@router.post("/chat/completions")
+@router.post("/chat/completions", response_model=ChatCompletionResponse)
 async def chat_completions(request: ChatCompletionRequest, response: Response):
     """
     OpenAI-compatible drop-in proxy with Semantic LLM query-aware context compression,
@@ -144,22 +143,48 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
 
     start_total_time = time.time()
 
-    # Extract conversation context (system prompts + history)
-    history_messages = [m.content for m in request.messages[:-1]] if len(request.messages) > 1 else []
+    # Deduplicate history while preserving structure
+    deduped_msgs_raw = [{"role": m.role, "content": m.content} for m in request.messages]
+    deduped_msgs_list, _ = deduplicate_conversation_history(deduped_msgs_raw)
+
     last_user_query = user_messages[-1] if user_messages else raw_prompt
 
+    # Detect if user prompt contains an explicit Question / Query separator (e.g. from RAG or playground)
+    match_query = re.search(r'\n+(?:User Question|Question|Query|Task):\s*(.+)$', raw_prompt, re.IGNORECASE | re.DOTALL)
+    if match_query:
+        query_text = match_query.group(1).strip()
+        context_text = raw_prompt[:match_query.start()].strip()
+    else:
+        query_text = last_user_query
+        context_text = raw_prompt
+
     # ── Step 1: Semantic LLM Query-Aware Context Optimization ────────────
-    compression_result = compress_for_turn(
-        context=raw_prompt,
-        user_query=last_user_query,
-        context_blocks=history_messages if history_messages else None,
-        mode="compiler"
-    )
-    optimized_prompt = compression_result["optimized_text"]
-    original_tokens = compression_result["original_tokens"]
-    optimized_tokens = compression_result["optimized_tokens"]
-    tokens_saved = compression_result["tokens_saved"]
-    compression_percent = compression_result["compression_percent"]
+    system_indices = [i for i, m in enumerate(deduped_msgs_list) if m.get("role") == "system"]
+    if system_indices:
+        sys_idx = system_indices[0]
+        sys_content = deduped_msgs_list[sys_idx].get("content", "")
+        if estimate_tokens(sys_content) > 60:
+            compression_result = compress_context(sys_content, query=query_text, mode="compiler")
+            deduped_msgs_list[sys_idx]["content"] = compression_result["compressed_text"]
+        else:
+            compression_result = compress_for_turn(context=context_text, user_query=query_text, mode="compiler")
+    else:
+        compression_result = compress_for_turn(
+            context=context_text,
+            user_query=query_text,
+            mode="compiler"
+        )
+        if deduped_msgs_list and deduped_msgs_list[-1].get("role") == "user":
+            if match_query and compression_result.get("compressed_text"):
+                deduped_msgs_list[-1]["content"] = f"{compression_result['compressed_text']}\n\nUser Question:\n{query_text}"
+            else:
+                deduped_msgs_list[-1]["content"] = compression_result.get("optimized_text") or compression_result.get("compressed_text") or raw_prompt
+
+    optimized_prompt = compression_result.get("optimized_text") or compression_result.get("compressed_text") or raw_prompt
+    original_tokens = compression_result.get("original_tokens", estimate_tokens(raw_prompt))
+    optimized_tokens = compression_result.get("optimized_tokens", estimate_tokens(optimized_prompt))
+    tokens_saved = compression_result.get("tokens_saved", 0)
+    compression_percent = compression_result.get("compression_percent", 0.0)
 
     # ── Step 2: Semantic Cache Lookup ──────────────────────────────────────
     cache_start = time.time()
@@ -174,7 +199,7 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
         # Determine routing classification for cached item
         model_routed, complexity_tier, route_reason = evaluate_complexity(optimized_prompt)
         
-        cached_usage = cached_data.get("usage", {})
+        cached_usage = cached_data.get("usage") or {}
         completion_tokens = cached_usage.get("completion_tokens", 0)
 
         # Record metrics asynchronously
@@ -226,12 +251,6 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
         return JSONResponse(content=result_payload, headers=dict(response.headers))
 
     # ── Step 3: Complexity Routing & Upstream Inference ────────────────────
-    deduped_msgs_raw = [{"role": m.role, "content": m.content} for m in request.messages]
-    deduped_msgs_list, _ = deduplicate_conversation_history(deduped_msgs_raw)
-    
-    if deduped_msgs_list and deduped_msgs_list[-1]["role"] == "user":
-        deduped_msgs_list[-1]["content"] = optimized_prompt
-
     optimized_request = ChatCompletionRequest(
         model=request.model,
         messages=[Message(**m) for m in deduped_msgs_list],
@@ -254,7 +273,7 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
             pass
 
         # ── Step 5: Metrics & Cost Recording ───────────────────────────────
-        usage_data = response_data.get("usage", {})
+        usage_data = response_data.get("usage") or {}
         completion_tokens = usage_data.get("completion_tokens", 0)
 
         metric_entry = await record_metric(

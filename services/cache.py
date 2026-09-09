@@ -152,22 +152,30 @@ async def get_similar_prompt(prompt: str) -> Tuple[Optional[Dict[str, Any]], flo
     if not vector:
         return None, 0.0
 
-    # Try Qdrant query_points
+    # Try Qdrant query_points or search fallback
     if client:
         try:
             await _ensure_cache_ready()
-            results = await client.query_points(
-                collection_name=COLLECTION_NAME,
-                query=vector,
-                limit=1
-            )
-            if results and results.points:
-                top_hit = results.points[0]
+            if hasattr(client, "query_points"):
+                results = await client.query_points(
+                    collection_name=COLLECTION_NAME,
+                    query=vector,
+                    limit=1
+                )
+                points = results.points if results else []
+            else:
+                points = await client.search(
+                    collection_name=COLLECTION_NAME,
+                    query_vector=vector,
+                    limit=1
+                )
+            if points:
+                top_hit = points[0]
                 score = float(top_hit.score)
                 if score >= settings.CACHE_SIMILARITY_THRESHOLD:
                     return top_hit.payload, score
         except Exception as e:
-            logger.warning(f"Qdrant query_points notice: {e}")
+            logger.warning(f"Qdrant vector query notice: {e}")
 
     # Fallback: in-memory vector cache scan
     best_score = 0.0

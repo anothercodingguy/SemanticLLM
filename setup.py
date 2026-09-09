@@ -31,14 +31,14 @@ setup(
         "pydantic-settings>=2.0.0",
         "httpx>=0.24.0",
         "groq>=0.4.0",
-        "qdrant-client>=1.7.0",
+        "qdrant-client>=1.10.0",
         "redis>=5.0.0",
         "python-dotenv>=1.0.0",
         "fastembed>=0.2.0",
     ],
     entry_points={
         "console_scripts": [
-            "semantic-gateway=main:app",
+            "semantic-gateway=main:cli",
         ],
     },
 )

@@ -24,4 +24,10 @@ metrics.db
 .vercel/
 *.log
 
+# Build & Packaging
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+
 

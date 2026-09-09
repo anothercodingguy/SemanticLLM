@@ -59,6 +59,7 @@ def sustainability_from_tokens_saved(tokens_saved: int) -> Dict[str, Any]:
 def remove_duplicate_lines(text: str) -> Tuple[str, int]:
     """
     Deduplicate repetitive log lines, repeated RAG output chunks, and boilerplate system traces.
+    Preserves lines inside code blocks verbatim to prevent syntax corruption.
     """
     lines = text.split('\n')
     if len(lines) <= 1:
@@ -67,10 +68,17 @@ def remove_duplicate_lines(text: str) -> Tuple[str, int]:
     seen_lines = set()
     cleaned_lines = []
     removed_count = 0
+    in_code_fence = False
 
     for line in lines:
         stripped = line.strip()
-        if not stripped or stripped in ('```', '---', '***'):
+        if stripped.startswith('```'):
+            in_code_fence = not in_code_fence
+            cleaned_lines.append(line)
+            continue
+
+        # Never strip duplicate lines inside code blocks (functions share statements like 'return True', 'pass', etc.)
+        if in_code_fence or not stripped or stripped in ('---', '***'):
             cleaned_lines.append(line)
             continue
 
@@ -102,7 +110,7 @@ def clean_redundant_whitespace(text: str) -> str:
     return text.strip()
 
 
-def deduplicate_conversation_history(messages: List[Dict[str, str]]) -> Tuple[List[Dict[str, str]], int]:
+def deduplicate_conversation_history(messages: List[Any]) -> Tuple[List[Any], int]:
     """
     Deduplicate repeated user/system turns while preserving chronological order.
     """
@@ -117,8 +125,12 @@ def deduplicate_conversation_history(messages: List[Dict[str, str]]) -> Tuple[Li
     history = messages[:-1]
 
     for msg in history:
-        role = msg.get('role', '')
-        content = msg.get('content', '').strip()
+        if isinstance(msg, dict):
+            role = msg.get('role', '')
+            content = msg.get('content', '').strip()
+        else:
+            role = getattr(msg, 'role', '')
+            content = (getattr(msg, 'content', '') or '').strip()
         key = f"{role}:{content}"
 
         if len(content) > 30 and key in seen_contents:
