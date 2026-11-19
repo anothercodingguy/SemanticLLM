@@ -1475,7 +1475,12 @@ print(result[<span class="ds-code-string">"compressed_text"</span>], result[<spa
     </style>
 </body>
 </html>"""
-    return HTMLResponse(content=html_content)
+    # The page is static (live numbers load from /api/metrics in the browser),
+    # so let the CDN serve it instead of cold-starting this function on every visit.
+    return HTMLResponse(
+        content=html_content,
+        headers={"Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400"},
+    )
 
 def cli():
     """CLI entrypoint for running the semantic-gateway server."""
