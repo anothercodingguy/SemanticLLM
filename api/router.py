@@ -158,8 +158,8 @@ async def compress_endpoint(
 @router.post("/chat/completions", response_model=ChatCompletionResponse)
 async def chat_completions(request: ChatCompletionRequest, response: Response):
     """
-    OpenAI-compatible drop-in proxy with Semantic LLM query-aware context compression,
-    sub-50ms semantic vector caching, and model complexity routing.
+    Chat completions endpoint that takes OpenAI-style messages. Applies rule-based,
+    query-aware context compression, a semantic vector cache, and model complexity routing.
     """
     user_messages = [m.content for m in request.messages if m.role == "user"]
     raw_prompt = " ".join(user_messages).strip()

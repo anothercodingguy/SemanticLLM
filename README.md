@@ -14,7 +14,7 @@ Live demo: https://semantic-llm.vercel.app
 - **Context compression.** `POST /compress` splits the context into blocks (markdown sections, code fences, log runs, paragraphs), removes duplicate lines, scores each block by keyword overlap with the query, and drops the low-scoring blocks. The scoring is rule-based and makes no model call. The response lists every kept and dropped block with a reason.
 - **Semantic cache.** Prompts are embedded with `all-MiniLM-L6-v2` (384 dimensions, via fastembed) and stored in Qdrant. A new prompt with cosine similarity of 0.82 or higher to a stored one gets the stored response and skips the model call. If Qdrant is unavailable, an in-process list of the last 200 entries is searched instead.
 - **Model routing.** Prompts that contain code markers, are longer than 250 characters, or include a keyword such as `debug` or `architecture` go to `llama-3.3-70b-versatile`. Everything else goes to `llama-3.1-8b-instant`.
-- **Provider fallback.** Groq is called first. If that fails, the gateway tries an Ollama server (`llama3`). If both fail, it returns a canned placeholder answer so the request still completes.
+- **Provider fallback.** Groq is called first. If that fails, the gateway tries an Ollama server (`llama3`). If both fail, it returns a canned placeholder answer so the request still completes. The response says which of the three answered in `provider.status` (`groq`, `ollama` or `fallback`), and `provider.simulated` is `true` for the placeholder.
 - **Metrics and dashboard.** Each request records token counts, cache hit or miss, latency, and an estimated cost from a price table in `services/metrics.py`. Metrics are kept in memory and also written to Redis when `REDIS_URL` is set. `GET /api/metrics` returns them, and `/` serves a dashboard with a playground.
 
 ## How a request flows
@@ -70,7 +70,7 @@ curl -i -X POST http://localhost:8000/v1/chat/completions \
   -d '{"messages": [{"role": "user", "content": "What is the capital of France?"}]}'
 ```
 
-The body has the usual chat completion fields (`id`, `choices`, `usage`) plus `compression`, `cache`, `routing`, `cost`, and `latency`. The headers include `X-Cache-Lookup`, `X-Model-Route`, `X-Tokens-Saved`, and `X-Latency-Ms`. Send the same request again and `X-Cache-Lookup` changes from `MISS` to `HIT`.
+The body has the usual chat completion fields (`id`, `choices`, `usage`) plus `compression`, `cache`, `routing`, `cost`, `latency`, and `provider`. The headers include `X-Cache-Lookup`, `X-Model-Route`, `X-Tokens-Saved`, and `X-Latency-Ms`. Send the same request again and `X-Cache-Lookup` changes from `MISS` to `HIT`.
 
 ## Tech stack
 
@@ -78,7 +78,7 @@ The body has the usual chat completion fields (`id`, `choices`, `usage`) plus `c
 - Groq Python SDK (`AsyncGroq`) for inference, httpx for the Ollama and Hugging Face calls
 - Qdrant (`qdrant-client`) and fastembed for the vector cache
 - Redis (`redis.asyncio`) as an optional metrics store
-- Dashboard: one HTML page served by FastAPI, with Chart.js
+- Dashboard: one HTML page (`static/index.html`) served by FastAPI, with Chart.js
 - Dockerfile and `docker-compose.yml` (gateway, Qdrant, Redis); `vercel.json` and `render.yaml` for hosting
 
 ## Run locally

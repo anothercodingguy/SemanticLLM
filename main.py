@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Semantic Gateway",
-    description="Query-Aware Neural Prompt & Context Compression Engine for Chat, RAG, and Coding Agents with Semantic Vector Caching",
+    description="Rule-based, query-aware context compression, semantic vector caching and complexity routing gateway for Groq-hosted Llama models",
     version="2.0.0",
     lifespan=lifespan
 )

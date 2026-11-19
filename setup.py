@@ -8,7 +8,7 @@ setup(
     version="2.0.0",
     author="Semantic LLM Team",
     author_email="hello@semanticllm.ai",
-    description="Query-Aware Neural Context Compression, Semantic Vector Caching & Complexity Routing Gateway for LLMs",
+    description="Rule-based, query-aware context compression, semantic vector caching and complexity routing gateway for Groq-hosted Llama models",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/anothercodingguy/SemanticLLM",
