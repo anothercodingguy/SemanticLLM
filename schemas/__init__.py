@@ -13,6 +13,7 @@ from .chat import (
     GatewayRoutingMetadata,
     GatewayCostMetadata,
     GatewayLatencyMetadata,
+    GatewayProviderMetadata,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "GatewayRoutingMetadata",
     "GatewayCostMetadata",
     "GatewayLatencyMetadata",
+    "GatewayProviderMetadata",
 ]

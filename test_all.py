@@ -155,6 +155,9 @@ def test_end_to_end_gateway_and_cache():
         assert "routing" in d1
         assert "cost" in d1
         assert res1.headers["X-Cache-Lookup"] == "MISS"
+        # The reply must say who produced it, and flag the canned placeholder
+        assert d1["provider"]["status"] in ("groq", "ollama", "fallback")
+        assert d1["provider"]["simulated"] is (d1["provider"]["status"] == "fallback")
 
         # Step 2: Semantically equivalent query (Cache HIT)
         q2 = "What happens if fetch_user cannot find the database row?"
@@ -165,6 +168,8 @@ def test_end_to_end_gateway_and_cache():
         assert d2["cache"]["similarity"] >= 80.0
         assert res2.headers["X-Cache-Lookup"] == "HIT"
         assert d2["cost"]["actual_spent"] == 0.0
+        # A cache hit keeps the provider of the answer it is replaying
+        assert d2["provider"] == d1["provider"]
 
         # Step 3: Check Metrics Summary
         summary = await get_metrics_summary()

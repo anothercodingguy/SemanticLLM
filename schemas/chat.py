@@ -108,6 +108,12 @@ class GatewayLatencyMetadata(BaseModel):
     cache_lookup_ms: float = 0.0
     upstream_inference_ms: float = 0.0
 
+class GatewayProviderMetadata(BaseModel):
+    # "groq", "ollama", "fallback" (canned placeholder, no model ran) or "unknown"
+    status: str = "unknown"
+    # True when the reply text is the placeholder rather than a model answer
+    simulated: bool = False
+
 class ChatCompletionResponse(BaseModel):
     id: str
     object: str = "chat.completion"
@@ -123,3 +129,4 @@ class ChatCompletionResponse(BaseModel):
     routing: Optional[GatewayRoutingMetadata] = None
     cost: Optional[GatewayCostMetadata] = None
     latency: Optional[GatewayLatencyMetadata] = None
+    provider: Optional[GatewayProviderMetadata] = None

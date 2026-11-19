@@ -29,6 +29,32 @@ from services.metrics import record_metric, calculate_direct_cost, calculate_act
 
 router = APIRouter()
 
+
+def _provider_info(status: str) -> Dict[str, Any]:
+    """
+    Describes who produced the reply text, so clients can tell a real model
+    answer from the canned placeholder.
+    status is one of: "groq", "ollama", "fallback" (placeholder), "unknown".
+    """
+    return {"status": status, "simulated": status == "fallback"}
+
+
+def _provider_info_for_cached(cached_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Cache entries written since this field was added carry their own "provider".
+    Older entries do not, so fall back to the id prefixes that services/llm.py
+    gives to placeholder and Ollama responses.
+    """
+    stored = cached_data.get("provider")
+    if isinstance(stored, dict) and stored.get("status"):
+        return stored
+    response_id = str(cached_data.get("id") or "")
+    if response_id.startswith("chatcmpl-fallback-"):
+        return _provider_info("fallback")
+    if response_id.startswith("chatcmpl-ollama-"):
+        return _provider_info("ollama")
+    return _provider_info("unknown")
+
 # ── Semantic LLM API Endpoints (POST /compress & GET /compress) ─────────
 @router.post("/compress", response_model=CompressResponse)
 @router.get("/compress", response_model=CompressResponse)
@@ -226,6 +252,7 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
         # Build comprehensive response payload
         result_payload = {
             **cached_data,
+            "provider": _provider_info_for_cached(cached_data),
             "compression": compression_result,
             "cache": {
                 "hit": True,
@@ -265,7 +292,12 @@ async def chat_completions(request: ChatCompletionRequest, response: Response):
         total_latency_ms = (time.time() - start_total_time) * 1000
 
         target_model, complexity_tier, route_reason = evaluate_complexity(optimized_prompt)
-        
+
+        # Record who answered ("groq", "ollama", or "fallback" for the canned
+        # placeholder). It is set before the cache write so that a later cache
+        # hit on this entry still says where the text originally came from.
+        response_data["provider"] = _provider_info(provider_status)
+
         # ── Step 4: Cache Upsert for Future Hits ───────────────────────────
         try:
             await store_prompt(optimized_prompt, response_data)
