@@ -24,11 +24,31 @@ def test_health_check():
 def test_root_dashboard():
     response = client.get("/")
     assert response.status_code == 200
-    assert "Semantic Gateway" in response.text
-    assert "Semantic" in response.text
-    assert "Interactive Local Playground" in response.text
-    assert "Benchmarks" in response.text
-    assert "Telemetry" in response.text
+    # The page is served from static/index.html with the CDN caching header
+    assert response.headers["content-type"].startswith("text/html")
+    assert response.headers["cache-control"] == "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400"
+    page = response.text
+
+    # Sections the page must have
+    for expected in (
+        "Semantic Gateway",
+        "What happens to a request",   # pipeline section
+        "Playground",
+        "Request log",
+        "/v1/chat/completions",        # the endpoint the playground calls
+        "/api/metrics",                # where the counters come from
+        "not a benchmark",             # the one static sample number is labelled
+    ):
+        assert expected in page, f"missing from dashboard: {expected!r}"
+
+    # Claims the code does not back must not come back
+    lowered = page.lower()
+    for banned in (
+        "benchmarks", "~65%", "99.4%", "sub-50ms", "<50ms", "&lt;50ms",
+        "neural", "mcp-proxy", "@semantic-llm/mcp", "agent mcp", "apache",
+        "openai, anthropic", "precision (", "fixed 35%",
+    ):
+        assert banned not in lowered, f"unsupported claim on dashboard: {banned!r}"
     print("✅ Dashboard HTML page test passed")
 
 def test_semantic_compression_engine():
@@ -77,7 +97,7 @@ def test_semantic_compression_engine():
     assert sustain["co2_kg_avoided"] > 0
     assert sustain["watt_hours_saved"] > 0
     assert sustain["gpu_seconds_avoided"] > 0
-    print("✅ Semantic LLM neural context compression engine tests passed")
+    print("✅ Semantic LLM context compression engine tests passed")
 
 def test_semantic_compression_http_endpoints():
     # 1. Test POST /v1/compress (JSON)

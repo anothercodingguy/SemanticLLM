@@ -1,922 +1,979 @@
 <!DOCTYPE html>
-<html lang="en-US" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Semantic Gateway — Cut Your LLM API Costs by ~65%</title>
-    <meta name="description" content="Reduce LLM API costs by ~65% while preserving answer-critical evidence. Query-aware neural compression for chat, RAG, and coding agents with sub-50ms vector caching.">
-    <!-- Google Fonts: DM Sans, Inter, JetBrains Mono -->
+    <title>Semantic Gateway: context trimming, semantic cache and model routing for Groq Llama</title>
+    <meta name="description" content="A FastAPI gateway for Groq-hosted Llama models. It trims long context with rule-based, query-aware block scoring, answers repeat questions from a semantic cache, and routes each prompt to a small or a large model.">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234d88ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='12 2 2 7 12 12 22 7 12 2'/%3E%3Cpolyline points='2 17 12 22 22 17'/%3E%3Cpolyline points='2 12 12 17 22 12'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!--
+        Chart.js is pinned to one exact version and checked against a hash (SRI),
+        so the CDN cannot hand the page different code later. `defer` keeps it
+        from blocking the first paint; the page works without it (the chart
+        area shows a note and the table carries the same data).
+    -->
+    <script defer id="chartjs-lib"
+            src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"
+            integrity="sha512-Y51n9mtKTVBh3Jbx5pZSJNDDMyY+yGe77DGtBPzRlgsf/YLCh13kSZ3JmfHGzYFCmOndraf0sQgfM654b7dJ3w=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
-        /* ═══════════════════════════════════════════════════════════════════
-           DEEPSEEK HARNESS DESIGN SYSTEM (Dark Glass Obsidian Aesthetic)
-           ═══════════════════════════════════════════════════════════════════ */
+        /* ── Tokens ───────────────────────────────────────────────────── */
         :root {
-            --ds-page: #0b0c0f;
-            --ds-surface-1: #111317;
-            --ds-surface-2: #16181f;
-            --ds-surface-3: #1c1e27;
-            --ds-surface-card: #15171e;
-            --ds-border-default: rgba(255, 255, 255, 0.08);
-            --ds-border-subtle: rgba(255, 255, 255, 0.04);
-            --ds-border-hover: rgba(255, 255, 255, 0.18);
-            --ds-brand: #4d88ff;
-            --ds-brand-light: #679efe;
-            --ds-brand-hover: #3b74f0;
-            --ds-brand-glow: rgba(77, 136, 255, 0.35);
-            --ds-brand-bg: rgba(77, 136, 255, 0.08);
-            --ds-primary: #f0f2f7;
-            --ds-secondary: #9aa0b0;
-            --ds-description: #818798;
-            --ds-muted: #535868;
-            --ds-green: #28c840;
-            --ds-green-glow: rgba(40, 200, 64, 0.25);
-            --ds-amber: #febc2e;
-            --ds-red: #ff5f57;
-            --ds-purple: #a855f7;
-            --font-sans: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --bg: #0b0c0f;
+            --surface-1: #101216;
+            --surface-2: #15171d;
+            --surface-3: #1b1e26;
+            --line: rgba(255, 255, 255, 0.09);
+            --line-strong: rgba(255, 255, 255, 0.2);
+            --text: #eef0f5;
+            --text-2: #a7adbb;
+            --text-3: #7f8698;
+            --brand: #4d88ff;
+            --brand-strong: #2f66e0;
+            --brand-soft: rgba(77, 136, 255, 0.12);
+            --green: #3ad05a;
+            --amber: #febc2e;
+            --red: #ff6b61;
+            --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, Menlo, monospace;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 18px;
-            --radius-pill: 9999px;
-            --shadow-subtle: 0 2px 10px rgba(0, 0, 0, 0.35);
-            --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1);
-            --shadow-glow: 0 0 35px rgba(77, 136, 255, 0.2);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --header-h: 60px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; color-scheme: dark; }
+        *, *::before, *::after { box-sizing: border-box; }
+        * { margin: 0; padding: 0; }
+        [hidden] { display: none !important; }
+
+        html { color-scheme: dark; -webkit-text-size-adjust: 100%; }
+        @media (prefers-reduced-motion: no-preference) {
+            html { scroll-behavior: smooth; }
+        }
 
         body {
             font-family: var(--font-sans);
-            background: var(--ds-page);
-            color: var(--ds-primary);
-            line-height: 1.65;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
+            overflow-wrap: break-word;
+        }
+
+        /* Static backdrop: a dot grid that fades out, plus one soft glow. No animation. */
+        body::before {
+            content: "";
+            position: fixed; inset: 0; z-index: -1; pointer-events: none;
+            background:
+                radial-gradient(60% 45% at 25% 0%, rgba(77, 136, 255, 0.13), transparent 70%),
+                radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1.5px) 0 0 / 22px 22px;
+            -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+        }
+
+        a { color: var(--brand); }
+        /* Ligatures off so code such as -> or != is shown as typed */
+        code, pre, kbd, .textarea { font-family: var(--font-mono); font-variant-ligatures: none; }
+        button { font: inherit; color: inherit; }
+
+        /* One visible keyboard focus style for every interactive element */
+        :focus-visible {
+            outline: 2px solid #8fb4ff;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        .skip-link {
+            position: absolute; left: 12px; top: -48px; z-index: 200;
+            background: var(--brand-strong); color: #fff; padding: 8px 14px;
+            border-radius: var(--radius-sm); text-decoration: none; font-weight: 600;
+        }
+        .skip-link:focus { top: 10px; }
+
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; overflow: hidden;
+            clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+        }
+
+        .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+        /* ── Header ───────────────────────────────────────────────────── */
+        .site-header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(11, 12, 15, 0.86);
+            -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--line);
+        }
+        .header-bar {
+            max-width: 1180px; margin: 0 auto; padding: 0 24px;
+            min-height: var(--header-h);
+            display: flex; align-items: center; gap: 16px;
             position: relative;
         }
+        .logo {
+            display: inline-flex; align-items: center; gap: 10px;
+            color: #fff; text-decoration: none;
+            font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em;
+            white-space: nowrap;
+        }
+        .logo svg { color: var(--brand); flex: none; }
 
-        /* Ambient Mesh Glow */
-        .ambient-mesh {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            pointer-events: none;
-            z-index: 0;
-            overflow: hidden;
+        .nav-wrap { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .site-nav { display: flex; align-items: center; gap: 4px; margin: 0 auto; }
+        .site-nav a {
+            color: var(--text-2); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+            padding: 8px 12px; border-radius: var(--radius-sm);
+            transition: color 0.15s, background 0.15s;
         }
-        .ambient-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(110px);
-            opacity: 0.25;
-            pointer-events: none;
-            mix-blend-mode: screen;
-        }
-        .orb-1 { top: -150px; left: 20%; width: 650px; height: 650px; background: radial-gradient(circle, #2d5f9e 0%, #1a3870 55%, transparent 70%); }
-        .orb-2 { top: 400px; right: 5%; width: 550px; height: 550px; background: radial-gradient(circle, #1e40af 0%, #0f275a 60%, transparent 70%); opacity: 0.15; }
+        .site-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+        .header-actions { display: flex; align-items: center; gap: 8px; }
 
-        #hero-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            opacity: 0.6;
-            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, transparent 100%);
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            min-height: 40px; padding: 0 16px;
+            border-radius: var(--radius-sm); border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.04); color: var(--text);
+            font-size: 0.9rem; font-weight: 500; text-decoration: none; cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, transform 0.15s;
         }
+        .btn:hover { background: rgba(255, 255, 255, 0.09); border-color: var(--line-strong); }
+        .btn:active { transform: translateY(1px); }
+        .btn[disabled] { opacity: 0.6; cursor: progress; }
+        .btn-primary {
+            background: var(--brand-strong); border-color: rgba(255, 255, 255, 0.16);
+            color: #fff; font-weight: 600;
+        }
+        .btn-primary:hover { background: #3b74f0; border-color: rgba(255, 255, 255, 0.3); }
+        .btn-lg { min-height: 46px; padding: 0 20px; font-size: 0.95rem; }
+        .btn-sm { min-height: 32px; padding: 0 10px; font-size: 0.8rem; }
+        .btn-icon { width: 40px; padding: 0; }
 
-        /* Container */
-        .ds-container { max-width: 1240px; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 10; }
+        .nav-toggle { display: none; margin-left: auto; }
 
-        /* Header */
-        .ds-header-wrapper {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(11, 12, 15, 0.8);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border-bottom: 1px solid var(--ds-border-default);
-            transition: all 0.25s ease;
+        /* Phone header: the links and actions collapse into a panel under the bar */
+        @media (max-width: 860px) {
+            .nav-toggle { display: inline-flex; }
+            .nav-wrap {
+                display: none;
+                position: absolute; top: 100%; left: 0; right: 0;
+                flex-direction: column; align-items: stretch; gap: 12px;
+                padding: 12px 16px 16px;
+                background: var(--surface-1);
+                border-bottom: 1px solid var(--line);
+                box-shadow: 0 18px 30px rgba(0, 0, 0, 0.5);
+            }
+            .nav-wrap[data-open="true"] { display: flex; }
+            .site-nav { flex-direction: column; align-items: stretch; margin: 0; gap: 2px; }
+            .site-nav a { padding: 12px; font-size: 1rem; }
+            .header-actions { border-top: 1px solid var(--line); padding-top: 12px; }
+            .header-actions .btn { flex: 1; width: auto; padding: 0 14px; }
         }
-        .ds-header-bar {
-            max-width: 1240px; margin: 0 auto;
-            padding: 0.85rem 1.5rem;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .ds-logo-group {
-            display: flex; align-items: center; gap: 0.75rem;
-            text-decoration: none; color: #ffffff;
-        }
-        .ds-logo-mark {
-            width: 28px; height: 28px; color: var(--ds-brand);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .ds-logo-text {
-            font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; color: #ffffff;
-        }
-        .ds-nav-links { display: flex; align-items: center; gap: 1.8rem; }
-        .ds-nav-link {
-            text-decoration: none; color: var(--ds-description);
-            font-size: 0.88rem; font-weight: 500; transition: color 0.15s ease;
-            cursor: pointer;
-        }
-        .ds-nav-link:hover { color: #ffffff; }
-
-        .ds-header-actions { display: flex; align-items: center; gap: 0.85rem; }
-        .ds-btn-header {
-            display: inline-flex; align-items: center; gap: 0.4rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); color: var(--ds-primary);
-            font-size: 0.85rem; font-weight: 500; padding: 0.45rem 0.85rem;
-            text-decoration: none; cursor: pointer; transition: all 0.2s ease;
-        }
-        .ds-btn-header:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--ds-border-hover); color: #ffffff; }
-
-        /* Buttons */
-        .ds-btn-primary {
-            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-            background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
-            color: #ffffff; text-decoration: none; font-size: 0.92rem; font-weight: 600;
-            padding: 0.75rem 1.4rem; border-radius: var(--radius-sm);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer;
-        }
-        .ds-btn-primary:hover {
-            background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
-            box-shadow: 0 0 28px rgba(59, 130, 246, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
-            transform: translateY(-1px);
-        }
-        .ds-btn-secondary {
-            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-            background: rgba(255, 255, 255, 0.04); color: var(--ds-primary);
-            text-decoration: none; font-size: 0.92rem; font-weight: 500;
-            padding: 0.75rem 1.35rem; border-radius: var(--radius-sm);
-            border: 1px solid var(--ds-border-default); backdrop-filter: blur(10px);
-            transition: all 0.2s ease; cursor: pointer;
-        }
-        .ds-btn-secondary:hover { background: rgba(255, 255, 255, 0.08); border-color: var(--ds-border-hover); color: #ffffff; transform: translateY(-1px); }
-
-        /* Hero */
-        .ds-hero-section {
-            padding: 4.5rem 0 3.5rem;
-            display: flex; align-items: center;
-        }
-        .ds-hero-grid {
-            display: grid; grid-template-columns: 56fr 44fr;
-            gap: 3rem; align-items: center; width: 100%;
-        }
-        .ds-hero-content { display: flex; flex-direction: column; align-items: flex-start; gap: 1.3rem; }
-
-        .ds-hero-badge {
-            display: inline-flex; align-items: center; padding: 1px; border-radius: 8px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 35%, rgba(255, 255, 255, 0.04) 65%, rgba(255, 255, 255, 0.28) 100%);
-            box-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
-        }
-        .ds-hero-badge span {
-            padding: 5px 12px; border-radius: 7px; background: rgba(0, 0, 0, 0.35);
-            font-family: var(--font-mono); font-size: 12px; font-weight: 500;
-            color: rgba(255, 255, 255, 0.95); line-height: 1; letter-spacing: 0.04em;
-            display: flex; align-items: center; gap: 0.5rem;
-        }
-        .ds-status-dot-live {
-            width: 7px; height: 7px; background: var(--ds-green); border-radius: 50%;
-            box-shadow: 0 0 10px var(--ds-green); animation: pulse-live 2s infinite;
-        }
-        @keyframes pulse-live { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
-
-        .ds-text-hero {
-            font-size: clamp(2.4rem, 4.5vw, 3.8rem);
-            font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; color: #ffffff;
-        }
-        .ds-brand-gradient {
-            background: linear-gradient(135deg, #ffffff 0%, #9ec3ff 50%, #4d88ff 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .ds-text-body {
-            font-size: 1.05rem; line-height: 1.65; color: var(--ds-description); max-width: 580px;
-        }
-        .ds-hero-cta-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; margin-top: 0.4rem; }
-
-        /* Quickstart Tabbed Box */
-        .ds-terminal-container { display: flex; flex-direction: column; width: 100%; }
-        .ds-term-tabs { display: flex; gap: 4px; margin-left: 8px; z-index: 2; }
-        .ds-term-tab {
-            padding: 7px 12px; font-size: 12px; font-weight: 500;
-            color: var(--ds-description); background: transparent;
-            border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0;
-            cursor: pointer; transition: all 0.2s ease;
-        }
-        .ds-term-tab.active {
-            color: #ffffff; background: rgba(18, 20, 26, 0.85);
-            backdrop-filter: blur(16px); border-color: var(--ds-border-default);
-        }
-        .ds-term-box {
-            background: rgba(18, 20, 26, 0.85);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-card), var(--shadow-glow);
-            overflow: hidden; position: relative;
-        }
-        .ds-term-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0.65rem 1.15rem; border-bottom: 1px solid var(--ds-border-default);
-            background: rgba(12, 13, 17, 0.5);
-        }
-        .ds-traffic-lights { display: flex; align-items: center; gap: 6px; }
-        .ds-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .ds-dot.red { background: var(--ds-red); }
-        .ds-dot.yellow { background: var(--ds-amber); }
-        .ds-dot.green { background: var(--ds-green); }
-        .ds-term-title { font-family: var(--font-mono); font-size: 11.5px; color: var(--ds-muted); }
-        .ds-copy-btn {
-            background: transparent; border: none; color: var(--ds-description);
-            font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px;
-            transition: color 0.15s ease;
-        }
-        .ds-copy-btn:hover { color: #ffffff; }
-        .ds-term-body {
-            padding: 1.25rem 1.4rem; font-family: var(--font-mono); font-size: 12.5px;
-            line-height: 1.7; color: var(--ds-primary); overflow-x: auto; max-height: 260px;
-        }
-        .ds-prompt-sym { color: var(--ds-brand); font-weight: 700; user-select: none; }
-        .ds-code-comment { color: var(--ds-muted); }
-        .ds-code-keyword { color: #f472b6; }
-        .ds-code-string { color: #93c5fd; }
-
-        /* Value Metrics Bar */
-        .ds-metrics-bar-section {
-            padding: 2rem 0;
-            border-top: 1px solid var(--ds-border-subtle);
-            border-bottom: 1px solid var(--ds-border-subtle);
-            background: rgba(255, 255, 255, 0.015);
-        }
-        .ds-val-grid-4 {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;
-        }
-        .ds-val-card { display: flex; flex-direction: column; gap: 0.25rem; }
-        .ds-val-num { font-size: 1.75rem; font-weight: 700; color: #ffffff; letter-spacing: -0.02em; }
-        .ds-val-lbl { font-size: 0.92rem; font-weight: 600; color: var(--ds-brand-light); }
-        .ds-val-sub { font-size: 0.82rem; color: var(--ds-description); line-height: 1.45; }
-
-        /* Sections */
-        .ds-section { padding: 4.5rem 0; position: relative; }
-        .ds-section-header {
-            max-width: 800px; margin: 0 auto 2.5rem; text-align: center;
-            display: flex; flex-direction: column; align-items: center; gap: 0.85rem;
-        }
-        .ds-text-heading1 {
-            font-size: clamp(1.8rem, 3.2vw, 2.5rem); font-weight: 700;
-            letter-spacing: -0.03em; line-height: 1.2; color: #ffffff;
+        @media (min-width: 861px) {
+            .header-actions .gh-label { display: none; }
         }
 
-        /* Benchmarks Table */
-        .ds-bench-table-wrap {
-            background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); overflow-x: auto; box-shadow: var(--shadow-card);
-            margin-top: 1.25rem;
+        /* ── Shared section pieces ────────────────────────────────────── */
+        section { scroll-margin-top: calc(var(--header-h) + 16px); }
+        .section { padding: 72px 0; border-top: 1px solid var(--line); }
+        .section-alt { background: rgba(0, 0, 0, 0.22); }
+        .eyebrow {
+            font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500;
+            letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand);
         }
-        table.ds-bench-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left; }
-        table.ds-bench-table th, table.ds-bench-table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--ds-border-subtle); }
-        table.ds-bench-table th { background: rgba(0, 0, 0, 0.3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ds-muted); font-weight: 700; }
-        table.ds-bench-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
-        table.ds-bench-table tr.highlight-row td { background: rgba(77, 136, 255, 0.06); font-weight: 600; }
-        .ds-pill-score { padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 700; font-size: 11.5px; display: inline-block; }
-        .ds-pill-score.green { background: rgba(40, 200, 64, 0.15); color: #4ade80; border: 1px solid rgba(40, 200, 64, 0.3); }
-        .ds-pill-score.amber { background: rgba(254, 188, 46, 0.15); color: #fde047; border: 1px solid rgba(254, 188, 46, 0.3); }
-        .ds-pill-score.red { background: rgba(255, 95, 87, 0.15); color: #fca5a5; border: 1px solid rgba(255, 95, 87, 0.3); }
+        .section-head { max-width: 720px; margin-bottom: 36px; }
+        .section-head h2 {
+            font-size: clamp(1.6rem, 3.2vw, 2.2rem); font-weight: 600;
+            letter-spacing: -0.025em; line-height: 1.15; margin: 10px 0 12px;
+        }
+        .section-head p { color: var(--text-2); font-size: 1.02rem; }
 
-        /* Developer Studio & Tabs */
-        .ds-studio-tabs {
-            display: flex; justify-content: center; gap: 1.5rem;
-            margin-bottom: 2rem; border-bottom: 1px solid var(--ds-border-default);
+        /* ── Hero ─────────────────────────────────────────────────────── */
+        .hero { padding: 72px 0 56px; }
+        .hero-grid {
+            display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            gap: 48px; align-items: center;
         }
-        .ds-studio-tab-btn {
-            padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 600;
-            color: var(--ds-description); background: transparent; border: none;
-            border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s ease; margin-bottom: -1px;
+        .hero h1 {
+            font-size: clamp(2.2rem, 5.2vw, 3.6rem); font-weight: 600;
+            letter-spacing: -0.035em; line-height: 1.05; margin: 18px 0 20px;
         }
-        .ds-studio-tab-btn:hover { color: #ffffff; }
-        .ds-studio-tab-btn.active {
-            color: #ffffff; border-bottom-color: var(--ds-brand);
-            text-shadow: 0 0 12px var(--ds-brand-glow);
-        }
-        .ds-tab-pane { display: none; }
-        .ds-tab-pane.active { display: block; animation: ds-fadeIn 0.25s ease-in-out; }
-        @keyframes ds-fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .hero h1 span { display: block; }
+        .hero h1 .accent { color: var(--brand); }
+        .hero-lede { color: var(--text-2); font-size: 1.08rem; max-width: 56ch; }
+        .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 
-        .ds-sandbox-grid { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 1.75rem; align-items: start; }
-        .ds-glass-panel {
-            background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-card);
+        /* ── Terminal ─────────────────────────────────────────────────── */
+        .terminal {
+            min-width: 0;
+            background: #07080a; border: 1px solid var(--line);
+            border-radius: var(--radius); overflow: hidden;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
         }
-        .ds-panel-eyebrow {
-            display: flex; align-items: center; justify-content: space-between;
-            font-size: 11px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.08em; color: var(--ds-muted); margin-bottom: 0.85rem;
+        .term-bar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px; background: var(--surface-2);
+            border-bottom: 1px solid var(--line);
+        }
+        .term-dots { display: flex; gap: 6px; flex: none; }
+        .term-dots i { width: 10px; height: 10px; border-radius: 50%; background: #343844; }
+        .term-title { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-3); }
+
+        .tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+        .tab {
+            background: none; border: 1px solid transparent; cursor: pointer;
+            border-radius: var(--radius-sm); padding: 7px 12px;
+            font-size: 0.85rem; font-weight: 500; color: var(--text-3);
+            transition: color 0.15s, background 0.15s, border-color 0.15s;
+        }
+        .tab:hover { color: var(--text); }
+        .tab[aria-selected="true"] { color: #fff; background: rgba(255, 255, 255, 0.07); border-color: var(--line); }
+        .term-tabs { padding: 8px 8px 0; background: #07080a; }
+        .term-tabs .tab { font-family: var(--font-mono); font-size: 0.74rem; padding: 6px 10px; }
+
+        .term-body { padding: 14px 16px 18px; }
+        pre.code {
+            font-size: 0.78rem; line-height: 1.7; color: #d5dae6;
+            white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2;
+        }
+        .c-comment { color: var(--text-3); }
+        .c-prompt { color: var(--green); user-select: none; }
+        .c-str { color: #9ecbff; }
+        .c-kw { color: #c7a6ff; }
+        .c-num { color: var(--amber); }
+
+        /* ── Sample strip ─────────────────────────────────────────────── */
+        .sample {
+            margin-top: 48px;
+            display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: center;
+            padding: 22px 26px;
+            background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius);
+        }
+        .sample-figure {
+            font-family: var(--font-mono); font-weight: 600; white-space: nowrap;
+            font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -0.03em; color: #fff;
+        }
+        .sample-figure .arrow { color: var(--text-3); margin: 0 0.3em; }
+        .sample-figure .to { color: var(--green); }
+        .sample-label {
+            font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase;
+            letter-spacing: 0.06em; color: var(--text-3); margin-top: 4px;
+        }
+        .sample p { color: var(--text-2); font-size: 0.94rem; }
+        .sample p + p { margin-top: 6px; }
+        .sample code { font-size: 0.85em; color: var(--text); }
+
+        /* ── Pipeline ─────────────────────────────────────────────────── */
+        .trace { list-style: none; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-1); }
+        .trace li {
+            display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 6px 18px;
+            padding: 18px 22px; align-items: start;
+        }
+        .trace li + li { border-top: 1px solid var(--line); }
+        .trace-n { font-family: var(--font-mono); font-size: 0.82rem; color: var(--brand); padding-top: 3px; }
+        .trace h3 { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
+        .trace p { color: var(--text-2); font-size: 0.93rem; margin-top: 4px; max-width: 70ch; }
+        .trace code { font-size: 0.86em; color: var(--text); }
+        .trace-file {
+            font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-3);
+            padding-top: 5px; text-align: right;
+        }
+        .trace .branch {
+            display: inline-block; margin-top: 8px; padding: 4px 9px;
+            font-family: var(--font-mono); font-size: 0.74rem; color: var(--green);
+            border: 1px dashed rgba(58, 208, 90, 0.4); border-radius: var(--radius-sm);
+        }
+        .footnote { color: var(--text-3); font-size: 0.88rem; margin-top: 16px; max-width: 80ch; }
+        .footnote code { font-size: 0.9em; color: var(--text-2); }
+
+        /* ── Playground ───────────────────────────────────────────────── */
+        .studio-tabs { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+        .studio-tabs .tab { font-size: 0.95rem; padding: 9px 16px; }
+
+        .play-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+        .panel {
+            min-width: 0;
+            background: var(--surface-1); border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 20px;
+        }
+        .panel-head {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+            margin-bottom: 14px;
+        }
+        .panel-title {
+            font-family: var(--font-mono); font-size: 0.74rem; font-weight: 600;
+            letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2);
         }
 
-        /* Mode Selector */
-        .ds-mode-selector-row {
-            display: flex; align-items: center; gap: 0.65rem;
-            margin-bottom: 1rem; padding: 0.5rem 0.75rem;
-            background: rgba(0, 0, 0, 0.35); border: 1px solid var(--ds-border-default);
+        .chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500;
+            letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.3;
+            padding: 4px 8px; border-radius: 4px;
+            border: 1px solid var(--line); color: var(--text-2); background: rgba(255, 255, 255, 0.03);
+        }
+        .chip.plain { text-transform: none; letter-spacing: 0; }
+        .chip.ok { color: var(--green); border-color: rgba(58, 208, 90, 0.35); background: rgba(58, 208, 90, 0.07); }
+        .chip.warn { color: var(--amber); border-color: rgba(254, 188, 46, 0.4); background: rgba(254, 188, 46, 0.07); }
+        .chip.bad { color: var(--red); border-color: rgba(255, 107, 97, 0.4); background: rgba(255, 107, 97, 0.07); }
+        .chip.info { color: #8fb4ff; border-color: rgba(77, 136, 255, 0.4); background: var(--brand-soft); }
+        .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+        .preset-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .preset {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); cursor: pointer;
+            border-radius: 999px; padding: 6px 12px; font-size: 0.82rem; color: var(--text-2);
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .preset:hover { color: #fff; border-color: var(--line-strong); }
+        .preset[aria-pressed="true"] { color: #fff; border-color: var(--brand); background: var(--brand-soft); }
+        .preset-hint { min-height: 1.4em; margin: 10px 0 14px; font-size: 0.85rem; color: var(--text-3); }
+
+        .field { margin-bottom: 14px; }
+        .field label {
+            display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;
+            font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 6px;
+        }
+        .field label .hint { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 400; color: var(--text-3); }
+        .textarea {
+            width: 100%; display: block;
+            background: #07080a; color: var(--text);
+            border: 1px solid var(--line); border-radius: var(--radius-sm);
+            padding: 11px 12px; font-size: 0.9rem;
+            transition: border-color 0.15s;
+        }
+        .textarea { font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.6; min-height: 200px; resize: vertical; }
+        .textarea.question { font-family: var(--font-sans); font-size: 0.92rem; min-height: 0; }
+        .textarea:hover { border-color: var(--line-strong); }
+        .textarea:focus-visible { outline-offset: 0; border-color: var(--brand); }
+        ::placeholder { color: var(--text-3); opacity: 1; }
+
+        .notice {
+            font-size: 0.82rem; color: var(--text-2);
+            border-left: 2px solid var(--amber); padding: 6px 0 6px 12px; margin-bottom: 16px;
+        }
+
+        .send-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+        .send-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .kbd-hint { font-size: 0.8rem; color: var(--text-3); }
+        kbd {
+            font-size: 0.72rem; padding: 2px 6px; border-radius: 4px;
+            border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.05); color: var(--text-2);
+        }
+        .spinner {
+            width: 14px; height: 14px; border-radius: 50%; flex: none;
+            border: 2px solid rgba(255, 255, 255, 0.35); border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .alert {
+            margin-top: 16px; padding: 12px 14px;
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+            background: rgba(255, 107, 97, 0.09); border: 1px solid rgba(255, 107, 97, 0.4);
+            border-radius: var(--radius-sm); color: #ffb3ad; font-size: 0.9rem;
+        }
+        .alert p { flex: 1 1 220px; min-width: 0; }
+
+        .result { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); transition: opacity 0.2s; }
+        .result[aria-busy="true"] { opacity: 0.45; }
+        .result-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+        .result-tabs { margin-bottom: 12px; }
+
+        .placeholder-banner {
+            margin-bottom: 12px; padding: 12px 14px;
+            background: rgba(254, 188, 46, 0.08); border: 1px solid rgba(254, 188, 46, 0.4);
+            border-radius: var(--radius-sm); color: #f6d58a; font-size: 0.88rem;
+        }
+        .placeholder-banner strong { color: var(--amber); }
+        .placeholder-banner code { font-size: 0.9em; }
+
+        .cache-note {
+            margin-bottom: 12px; padding: 10px 14px; font-size: 0.86rem; color: #b9cfff;
+            background: var(--brand-soft); border: 1px solid rgba(77, 136, 255, 0.4); border-radius: var(--radius-sm);
+        }
+        .reply {
+            background: #07080a; border: 1px solid var(--line); border-radius: var(--radius-sm);
+            padding: 14px; font-size: 0.92rem; white-space: pre-wrap; overflow-wrap: anywhere;
+            max-height: 360px; overflow: auto;
+        }
+
+        .diff-summary { font-size: 0.92rem; font-weight: 600; margin-bottom: 4px; }
+        .diff-note { font-size: 0.84rem; color: var(--text-3); margin-bottom: 12px; }
+        .diff-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .diff-col { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #07080a; }
+        .diff-col h4 {
+            font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em;
+            text-transform: uppercase; color: var(--text-2);
+            padding: 8px 12px; border-bottom: 1px solid var(--line);
+        }
+        .diff-col.after h4 { color: var(--green); }
+        .diff-col pre {
+            padding: 12px; font-size: 0.76rem; line-height: 1.6; color: #cfd4e0;
+            white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto;
+        }
+
+        .blocks { margin-top: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .blocks h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
+        .block-list { list-style: none; display: grid; gap: 6px; }
+        .block-item {
+            display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 2px 8px;
+            padding: 8px 10px; border-radius: var(--radius-sm);
+            border: 1px solid var(--line); font-size: 0.84rem;
+        }
+        .block-item .sign { font-family: var(--font-mono); font-weight: 600; }
+        .block-item .heading { font-weight: 600; }
+        .block-item .tokens { font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-3); white-space: nowrap; }
+        .block-item .reason { grid-column: 2 / -1; color: var(--text-3); font-size: 0.8rem; }
+        .block-item.kept { border-color: rgba(58, 208, 90, 0.25); background: rgba(58, 208, 90, 0.05); }
+        .block-item.kept .sign { color: var(--green); }
+        .block-item.dropped { border-color: rgba(255, 107, 97, 0.25); background: rgba(255, 107, 97, 0.05); }
+        .block-item.dropped .sign { color: var(--red); }
+        .block-item.dropped .heading { text-decoration: line-through; text-decoration-color: rgba(255, 107, 97, 0.6); }
+        .block-empty { font-size: 0.84rem; color: var(--text-3); }
+
+        .details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .detail {
+            min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .detail dt {
+            font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.05em;
+            text-transform: uppercase; color: var(--text-3); margin-bottom: 6px;
+        }
+        .detail dd { font-size: 0.92rem; font-weight: 600; }
+        .detail dd.mono { font-family: var(--font-mono); font-size: 0.82rem; }
+        .detail .sub { display: block; font-family: var(--font-sans); font-weight: 400; font-size: 0.8rem; color: var(--text-3); margin-top: 4px; }
+        .details-note { margin-top: 10px; font-size: 0.8rem; color: var(--text-3); }
+        .details-note code { font-size: 0.92em; color: var(--text-2); }
+
+        /* ── Counters and request log ─────────────────────────────────── */
+        .stat-list { list-style: none; }
+        .stat-list li {
+            display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+            padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem;
+        }
+        .stat-list li:last-child { border-bottom: 0; }
+        .stat-name { color: var(--text-2); }
+        .stat-val { font-family: var(--font-mono); font-weight: 600; text-align: right; }
+        .panel-foot { margin-top: 12px; font-size: 0.8rem; color: var(--text-3); }
+        .panel-foot code { font-size: 0.92em; color: var(--text-2); }
+        .metrics-error {
+            margin-top: 12px; padding: 10px 12px; font-size: 0.84rem; color: #ffb3ad;
+            border: 1px solid rgba(255, 107, 97, 0.4); border-radius: var(--radius-sm);
+            background: rgba(255, 107, 97, 0.08);
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+        }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .summary-card { background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; min-width: 0; }
+        .summary-card .lbl {
+            font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.05em;
+            text-transform: uppercase; color: var(--text-3);
+        }
+        .summary-card .val { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 600; margin-top: 6px; overflow-wrap: anywhere; }
+
+        .chart-box { margin-bottom: 16px; }
+        .chart-canvas { height: 260px; position: relative; }
+        .empty {
+            display: grid; place-items: center; text-align: center; min-height: 120px;
+            color: var(--text-3); font-size: 0.9rem; padding: 16px;
+            border: 1px dashed var(--line); border-radius: var(--radius-sm);
+        }
+
+        .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-1); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 760px; }
+        caption { text-align: left; padding: 14px 16px 0; }
+        th {
+            text-align: left; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
+            letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3);
+            padding: 12px 16px; border-bottom: 1px solid var(--line); white-space: nowrap;
+        }
+        td { padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+        tbody tr:last-child td { border-bottom: 0; }
+        td.mono { font-family: var(--font-mono); font-size: 0.78rem; white-space: nowrap; }
+        td.prompt { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+        td.state { text-align: center; color: var(--text-3); padding: 28px 16px; }
+
+        /* ── Docs dialog ──────────────────────────────────────────────── */
+        html:has(dialog[open]) { overflow: hidden; }
+        dialog.docs {
+            width: min(720px, calc(100vw - 24px)); max-height: min(86vh, 900px);
+            margin: auto; padding: 0;
+            background: var(--surface-2); color: var(--text);
+            border: 1px solid var(--line-strong); border-radius: 14px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+        }
+        dialog.docs[open] { display: flex; flex-direction: column; }
+        dialog.docs::backdrop { background: rgba(4, 5, 7, 0.78); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+        .docs-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 16px 20px; border-bottom: 1px solid var(--line);
+        }
+        .docs-head h2 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
+        .docs-body { padding: 18px 20px 22px; overflow-y: auto; }
+        .docs-body > p { color: var(--text-2); font-size: 0.92rem; }
+        .docs-body h3 { font-size: 0.95rem; font-weight: 600; margin: 22px 0 8px; }
+        .docs-body ul { margin: 8px 0 0 18px; color: var(--text-2); font-size: 0.9rem; }
+        .docs-body li + li { margin-top: 4px; }
+        .docs-body code { font-size: 0.88em; color: var(--text); }
+        .codeblock { position: relative; background: #07080a; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+        .codeblock pre { padding: 12px 14px; padding-right: 70px; }
+        .codeblock .btn { position: absolute; top: 8px; right: 8px; }
+        .docs-foot { padding: 14px 20px; border-top: 1px solid var(--line); text-align: right; }
+
+        /* ── Footer ───────────────────────────────────────────────────── */
+        .site-footer { border-top: 1px solid var(--line); padding: 28px 0 40px; font-size: 0.88rem; color: var(--text-3); }
+        .footer-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+        .footer-row strong { color: var(--text); font-weight: 600; }
+        .footer-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; list-style: none; }
+        .footer-links a, .footer-links button {
+            display: block; background: none; border: 0; cursor: pointer; color: var(--text-2);
+            text-decoration: none; font: inherit; line-height: 1.6; padding: 8px;
             border-radius: var(--radius-sm);
         }
-        .ds-mode-pill {
-            background: transparent; border: 1px solid transparent; color: var(--ds-description);
-            font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-pill);
-            cursor: pointer; transition: all 0.15s ease;
-        }
-        .ds-mode-pill.active { background: var(--ds-brand-bg); border-color: rgba(77,136,255,0.4); color: #ffffff; }
+        .footer-links a:hover, .footer-links button:hover { color: #fff; }
 
-        .ds-chip-row { display: flex; gap: 0.45rem; overflow-x: auto; padding-bottom: 0.65rem; margin-bottom: 0.85rem; }
-        .ds-chip {
-            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-pill); padding: 0.3rem 0.75rem; font-size: 0.78rem;
-            font-weight: 500; color: var(--ds-description); cursor: pointer; white-space: nowrap; transition: all 0.15s ease;
+        /* ── Smaller screens ──────────────────────────────────────────── */
+        @media (max-width: 980px) {
+            .hero { padding: 48px 0 40px; }
+            .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+            .play-grid { grid-template-columns: minmax(0, 1fr); }
+            .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
-        .ds-chip:hover { background: rgba(77, 136, 255, 0.1); border-color: rgba(77, 136, 255, 0.4); color: #ffffff; }
-
-        .ds-textarea {
-            width: 100%; height: 130px; padding: 0.85rem;
-            background: rgba(11, 12, 16, 0.8); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12.5px;
-            color: #ffffff; line-height: 1.55; resize: vertical; outline: none; transition: border-color 0.2s ease;
-        }
-        .ds-textarea:focus { border-color: var(--ds-brand); box-shadow: 0 0 0 3px rgba(77, 136, 255, 0.15); }
-        
-        .ds-query-input {
-            width: 100%; padding: 0.65rem 0.85rem; margin-top: 0.65rem;
-            background: rgba(11, 12, 16, 0.8); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12.5px;
-            color: #ffffff; outline: none; transition: border-color 0.2s ease;
-        }
-        .ds-query-input:focus { border-color: var(--ds-brand); box-shadow: 0 0 0 3px rgba(77, 136, 255, 0.15); }
-
-        .ds-prompt-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.85rem; }
-        .ds-token-badge { font-family: var(--font-mono); font-size: 11.5px; color: var(--ds-description); }
-
-        /* Streamlined Result Viewer */
-        .ds-result-section { margin-top: 1.5rem; border-top: 1px solid var(--ds-border-default); padding-top: 1.25rem; }
-        .ds-res-tabs { display: flex; gap: 0.45rem; margin-bottom: 1rem; flex-wrap: wrap; }
-        .ds-res-tab-btn {
-            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--ds-border-default);
-            padding: 0.35rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.78rem;
-            font-weight: 600; color: var(--ds-description); cursor: pointer; transition: all 0.15s ease;
-        }
-        .ds-res-tab-btn.active {
-            background: var(--ds-brand); color: #ffffff; border-color: var(--ds-brand);
-            box-shadow: 0 0 12px rgba(77, 136, 255, 0.3);
-        }
-        .ds-res-pane {
-            display: none; background: rgba(11, 12, 16, 0.6);
-            border: 1px solid var(--ds-border-default); border-radius: var(--radius-sm);
-            padding: 1.15rem; font-size: 0.88rem; line-height: 1.6;
-        }
-        .ds-res-pane.active { display: block; }
-
-        .ds-diff-box { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; max-height: 240px; overflow-y: auto; }
-        .ds-diff-orig {
-            color: #fca5a5; background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem;
-        }
-        .ds-diff-opt {
-            color: #86efac; background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2); padding: 0.5rem; border-radius: 6px;
+        @media (max-width: 720px) {
+            .container, .header-bar { padding-left: 16px; padding-right: 16px; }
+            .section { padding: 52px 0; }
+            .sample { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px; }
+            .trace li { grid-template-columns: 32px minmax(0, 1fr); padding: 16px; gap: 4px 12px; }
+            .trace-file { grid-column: 2; text-align: left; padding-top: 2px; }
+            .panel { padding: 16px; }
+            .diff-cols, .blocks { grid-template-columns: minmax(0, 1fr); }
+            .details { grid-template-columns: minmax(0, 1fr); }
+            .send-row .btn-primary { flex: 1; }
+            .send-actions { width: 100%; }
+            .kbd-hint { display: none; } /* no hardware keyboard shortcut on phones */
+            .codeblock pre { padding-right: 14px; padding-top: 46px; } /* copy button sits above the code */
         }
 
-        .ds-blocks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
-        .ds-block-card {
-            background: rgba(255, 255, 255, 0.025); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); padding: 0.75rem; font-size: 0.82rem;
-        }
-        .ds-block-card.kept { border-left: 3px solid var(--ds-green); }
-        .ds-block-card.dropped { border-left: 3px solid var(--ds-red); opacity: 0.8; }
-        .ds-block-head { display: flex; justify-content: space-between; font-weight: 600; color: #ffffff; margin-bottom: 0.25rem; }
-        .ds-block-reason { font-size: 11.5px; color: var(--ds-description); }
-
-        .ds-diag-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
-        .ds-diag-card {
-            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-sm); padding: 0.75rem 0.85rem;
-        }
-        .ds-diag-lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ds-muted); font-weight: 700; }
-        .ds-diag-val { font-size: 0.92rem; font-weight: 600; color: #ffffff; margin-top: 0.2rem; }
-
-        /* Telemetry Right Panel */
-        .ds-stat-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0.75rem 0; border-bottom: 1px solid var(--ds-border-subtle); font-size: 0.88rem;
-        }
-        .ds-stat-row:last-child { border-bottom: none; }
-        .ds-stat-name { color: var(--ds-description); font-weight: 500; }
-        .ds-stat-val { font-weight: 600; color: #ffffff; text-align: right; }
-        .ds-stat-val.brand { color: var(--ds-brand); }
-        .ds-stat-val.green { color: var(--ds-green); }
-
-        /* Impact Dashboard Grid */
-        .ds-dash-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.75rem; }
-        .ds-summary-card {
-            background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 1.35rem; box-shadow: var(--shadow-subtle);
-        }
-        .ds-summary-lbl { font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.06em; color: var(--ds-muted); }
-        .ds-summary-val { font-size: 1.65rem; font-weight: 700; color: #ffffff; margin-top: 0.4rem; }
-
-        .ds-chart-box {
-            background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); padding: 1.75rem; margin-bottom: 1.75rem; height: 320px;
-        }
-        .ds-table-wrap {
-            background: var(--ds-surface-card); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-md); overflow-x: auto;
-        }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th, td { text-align: left; padding: 1rem 1.15rem; border-bottom: 1px solid var(--ds-border-subtle); }
-        th { color: var(--ds-muted); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; background: rgba(0, 0, 0, 0.25); }
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: rgba(255, 255, 255, 0.02); }
-
-        .ds-badge { padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; }
-        .ds-badge.simple { background: rgba(77, 136, 255, 0.15); color: var(--ds-brand-light); border: 1px solid rgba(77, 136, 255, 0.3); }
-        .ds-badge.complex { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-        .ds-status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; }
-        .ds-status-pill.hit { color: var(--ds-green); }
-        .ds-status-pill.miss { color: var(--ds-amber); }
-
-        /* Modal */
-        .ds-modal-backdrop {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 200;
-            align-items: center; justify-content: center; padding: 1.5rem;
-        }
-        .ds-modal-backdrop.open { display: flex; }
-        .ds-modal-card {
-            background: var(--ds-surface-1); border: 1px solid var(--ds-border-default);
-            border-radius: var(--radius-lg); box-shadow: var(--shadow-card), var(--shadow-glow);
-            max-width: 720px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 2rem;
-        }
-        .ds-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-        .ds-modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--ds-muted); }
-
-        /* Minimal Footer */
-        .ds-footer-clean {
-            border-top: 1px solid var(--ds-border-default);
-            padding: 2.5rem 0; color: var(--ds-description); font-size: 0.85rem;
-        }
-        .ds-footer-clean-row {
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
-        }
-        .ds-footer-clean-links { display: flex; gap: 1.5rem; list-style: none; }
-        .ds-footer-clean-links a { color: var(--ds-description); text-decoration: none; transition: color 0.15s ease; }
-        .ds-footer-clean-links a:hover { color: #ffffff; }
-
-        @media (max-width: 1024px) {
-            .ds-hero-grid, .ds-sandbox-grid { grid-template-columns: 1fr; gap: 2.5rem; }
-            .ds-val-grid-4, .ds-dash-summary-grid { grid-template-columns: 1fr 1fr; }
-        }
-        @media (max-width: 768px) {
-            .ds-nav-links { display: none; }
-            .ds-val-grid-4, .ds-dash-summary-grid, .ds-diag-grid, .ds-blocks-grid { grid-template-columns: 1fr; }
+        /* Reduced motion: no spinner rotation, no transitions, no smooth scroll */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .spinner { animation: none !important; border-top-color: rgba(255, 255, 255, 0.35); }
         }
     </style>
 </head>
 <body>
+    <a class="skip-link" href="#main">Skip to content</a>
 
-    <!-- Ambient Mesh Canvas -->
-    <div class="ambient-mesh">
-        <div class="ambient-orb orb-1"></div>
-        <div class="ambient-orb orb-2"></div>
-        <canvas id="hero-canvas"></canvas>
-    </div>
-
-    <!-- HEADER -->
-    <header class="ds-header-wrapper">
-        <div class="ds-header-bar">
-            <a href="/" class="ds-logo-group" aria-label="Semantic Gateway Home">
-                <div class="ds-logo-mark">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                        <polyline points="2 17 12 22 22 17"></polyline>
-                        <polyline points="2 12 12 17 22 12"></polyline>
-                    </svg>
-                </div>
-                <div class="ds-logo-text">
-                    <span>Semantic Gateway</span>
-                </div>
+    <header class="site-header">
+        <div class="header-bar">
+            <a href="/" class="logo" aria-label="Semantic Gateway home">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                <span>Semantic Gateway</span>
             </a>
 
-            <nav class="ds-nav-links" aria-label="Main Navigation">
-                <a href="#demo" class="ds-nav-link" onclick="switchTab('sandbox')">Sandbox</a>
-                <a href="#benchmarks" class="ds-nav-link">Benchmarks</a>
-                <a href="#demo" class="ds-nav-link" onclick="switchTab('analytics')">Telemetry</a>
-            </nav>
+            <button type="button" class="btn btn-sm nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>
+                Menu
+            </button>
 
-            <div class="ds-header-actions">
-                <button type="button" class="ds-btn-header" onclick="openDocsModal()">Docs</button>
-                <a href="https://github.com/anothercodingguy/SemanticLLM" target="_blank" rel="noopener noreferrer" class="ds-btn-header" aria-label="GitHub Repository">
-                    <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                </a>
+            <div class="nav-wrap" id="nav-wrap">
+                <nav class="site-nav" aria-label="Main">
+                    <a href="#pipeline">How it works</a>
+                    <a href="#playground" data-open-tab="tab-play">Playground</a>
+                    <a href="#playground" data-open-tab="tab-log">Request log</a>
+                </nav>
+                <div class="header-actions">
+                    <button type="button" class="btn" data-open-docs>Docs</button>
+                    <a class="btn btn-icon" href="https://github.com/anothercodingguy/SemanticLLM" target="_blank" rel="noopener noreferrer" aria-label="Source on GitHub (opens in a new tab)">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                        <span class="gh-label" aria-hidden="true">GitHub</span>
+                    </a>
+                </div>
             </div>
         </div>
     </header>
 
-    <main>
-        <!-- HERO SECTION -->
-        <section class="ds-hero-section">
-            <div class="ds-container">
-                <div class="ds-hero-grid">
-                    <!-- Left: Hero Content -->
-                    <div class="ds-hero-content">
-                        <div class="ds-hero-badge">
-                            <span><span class="ds-status-dot-live"></span> Neural Context Engine · Groq Llama 3.1 & 3.3 · Vector Cache</span>
-                        </div>
-
-                        <h1 class="ds-text-hero">
-                            Cut Your LLM API Costs<br/>
-                            <span class="ds-brand-gradient">by ~65% Safely.</span>
+    <main id="main">
+        <!-- HERO -->
+        <section class="hero">
+            <div class="container">
+                <div class="hero-grid">
+                    <div class="hero-copy">
+                        <p class="eyebrow">FastAPI gateway · Groq Llama 3.1 8B / 3.3 70B · Ollama fallback</p>
+                        <h1>
+                            <span>Trim the context.</span>
+                            <span>Reuse the answer.</span>
+                            <span class="accent">Route the rest.</span>
                         </h1>
-
-                        <p class="ds-text-body">
-                            Query-aware neural compression for chat, RAG, and coding agents. Drops low-value filler before inference while locking answer-critical evidence (>98% target, 99.4% recall).
+                        <p class="hero-lede">
+                            Semantic Gateway sits in front of Groq-hosted Llama models. Before a call, it splits long context into blocks, scores each block against the question with keyword rules, and drops the low scorers. Repeat questions are answered from a semantic cache, and each remaining prompt goes to Llama 3.1 8B or Llama 3.3 70B depending on what it contains.
                         </p>
-
-                        <div class="ds-hero-cta-group">
-                            <a href="#demo" onclick="switchTab('sandbox')" class="ds-btn-primary">
-                                Try Interactive Sandbox
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <div class="hero-cta">
+                            <a href="#playground" class="btn btn-primary btn-lg" data-open-tab="tab-play">
+                                Open the playground
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                             </a>
-                            <button onclick="openDocsModal()" class="ds-btn-secondary">
-                                Integration Docs
+                            <button type="button" class="btn btn-lg" data-open-docs>API docs</button>
+                        </div>
+                    </div>
+
+                    <div class="terminal" id="quickstart">
+                        <div class="term-bar">
+                            <div class="term-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+                            <span class="term-title">examples</span>
+                            <button type="button" class="btn btn-sm" id="term-copy" aria-label="Copy the code in the selected example">
+                                <span id="term-copy-label">Copy</span>
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Right: Tabbed Terminal Box -->
-                    <div class="ds-terminal-container" id="quickstart">
-                        <div class="ds-term-tabs">
-                            <button class="ds-term-tab active" id="ttab-quick" onclick="switchTermTab('quick')">Quick start</button>
-                            <button class="ds-term-tab" id="ttab-compress" onclick="switchTermTab('compress')">POST /compress</button>
-                            <button class="ds-term-tab" id="ttab-sdk" onclick="switchTermTab('sdk')">Python SDK</button>
-                            <button class="ds-term-tab" id="ttab-mcp" onclick="switchTermTab('mcp')">Agent MCP</button>
+                        <div class="tabs term-tabs" role="tablist" aria-label="Code examples" data-tabs>
+                            <button type="button" class="tab" role="tab" id="tt-run" aria-controls="tp-run" aria-selected="true">Run locally</button>
+                            <button type="button" class="tab" role="tab" id="tt-compress" aria-controls="tp-compress" aria-selected="false" tabindex="-1">POST /v1/compress</button>
+                            <button type="button" class="tab" role="tab" id="tt-chat" aria-controls="tp-chat" aria-selected="false" tabindex="-1">Chat</button>
+                            <button type="button" class="tab" role="tab" id="tt-py" aria-controls="tp-py" aria-selected="false" tabindex="-1">Python (repo import)</button>
                         </div>
+                        <div class="term-body">
+                            <div role="tabpanel" id="tp-run" aria-labelledby="tt-run" tabindex="0">
+<pre class="code" data-copy="pip install -r requirements.txt&#10;uvicorn main:app --port 8000"><span class="c-comment"># From a clone of the repo</span>
+<span class="c-prompt">$ </span>pip install -r requirements.txt
+<span class="c-prompt">$ </span>uvicorn main:app --port 8000
 
-                        <div class="ds-term-box">
-                            <div class="ds-term-header">
-                                <div class="ds-traffic-lights">
-                                    <span class="ds-dot red"></span>
-                                    <span class="ds-dot yellow"></span>
-                                    <span class="ds-dot green"></span>
-                                </div>
-                                <span class="ds-term-title">semantic-gateway — 127.0.0.1:8000</span>
-                                <button class="ds-copy-btn" onclick="copyTermCode()">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                    <span id="copy-text">Copy</span>
-                                </button>
+<span class="c-comment"># Model replies need a Groq key in .env:</span>
+<span class="c-comment">#   GROQ_API_KEY=&lt;your key&gt;</span>
+<span class="c-comment"># Without one you get a placeholder reply;</span>
+<span class="c-comment"># trimming, cache and routing still run.</span></pre>
                             </div>
+                            <div role="tabpanel" id="tp-compress" aria-labelledby="tt-compress" tabindex="0" hidden>
+<pre class="code" data-copy="curl -X POST http://localhost:8000/v1/compress \&#10;  -H &quot;Content-Type: application/json&quot; \&#10;  -d '{&quot;context&quot;: &quot;## Deploy log\n2026-01-01 10:00:00 INFO health probe ok\n2026-01-01 10:00:05 INFO health probe ok\n\n## Refund policy\nRefunds above $500 need supervisor approval.&quot;, &quot;query&quot;: &quot;What is the refund policy?&quot;}'"><span class="c-prompt">$ </span>curl -X POST http://localhost:8000/v1/compress \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d <span class="c-str">'{"context": "## Deploy log\n2026-01-01 10:00:00 INFO health probe ok\n2026-01-01 10:00:05 INFO health probe ok\n\n## Refund policy\nRefunds above $500 need supervisor approval.", "query": "What is the refund policy?"}'</span>
 
-                            <div class="ds-term-body">
-                                <div id="term-pane-quick">
-                                    <div class="ds-code-comment"># Start Semantic Gateway</div>
-                                    <div><span class="ds-prompt-sym">$ </span>uvicorn main:app --host 0.0.0.0 --port 8000 --reload</div>
-                                    <br/>
-                                    <div style="color:var(--ds-green);">✓ Initialized Neural Compression Engine (Compiler & Precision)</div>
-                                    <div style="color:var(--ds-green);">✓ FastEmbed 384-dim Dense Vector Cache Ready</div>
-                                    <div style="color:var(--ds-green);">✓ Complexity Router (Groq 8B & 70B) Active</div>
-                                    <div style="color:var(--ds-muted);">Listening on http://127.0.0.1:8000 ▋</div>
-                                </div>
+<span class="c-comment"># Response, some fields left out</span>
+{
+  <span class="c-str">"compressed_text"</span>: <span class="c-str">"## Refund policy\nRefunds above $500 need supervisor approval."</span>,
+  <span class="c-str">"original_tokens"</span>: <span class="c-num">39</span>,
+  <span class="c-str">"kept_tokens"</span>: <span class="c-num">15</span>
+}
+<span class="c-comment"># kept_blocks and dropped_blocks list every block with a reason</span></pre>
+                            </div>
+                            <div role="tabpanel" id="tp-chat" aria-labelledby="tt-chat" tabindex="0" hidden>
+<pre class="code" data-copy="curl -i -X POST http://localhost:8000/v1/chat/completions \&#10;  -H &quot;Content-Type: application/json&quot; \&#10;  -d '{&quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;What is the capital of France?&quot;}]}'"><span class="c-prompt">$ </span>curl -i -X POST http://localhost:8000/v1/chat/completions \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d <span class="c-str">'{"messages": [{"role": "user", "content": "What is the capital of France?"}]}'</span>
 
-                                <div id="term-pane-compress" style="display:none;">
-                                    <div class="ds-code-comment"># Direct Context Compression Endpoint</div>
-                                    <div>curl -X POST http://localhost:8000/v1/compress \</div>
-                                    <div>  -H <span class="ds-code-string">"Content-Type: application/json"</span> \</div>
-                                    <div>  -d <span class="ds-code-string">'{"context": "Huge log dump...", "query": "What failed in deploy?", "mode": "compiler"}'</span></div>
-                                </div>
+<span class="c-comment"># The body has the usual chat completion fields plus</span>
+<span class="c-comment"># compression, cache, routing, cost, latency and provider.</span>
+<span class="c-comment"># Send it twice: the X-Cache-Lookup header goes MISS, then HIT.</span></pre>
+                            </div>
+                            <div role="tabpanel" id="tp-py" aria-labelledby="tt-py" tabindex="0" hidden>
+<pre class="code" data-copy="from services.compression import compress_for_turn&#10;&#10;res = compress_for_turn(context=long_text, user_query=&quot;What is the refund policy?&quot;)&#10;print(res[&quot;original_tokens&quot;], &quot;->&quot;, res[&quot;kept_tokens&quot;])&#10;print(res[&quot;compressed_text&quot;])"><span class="c-comment"># Not a published package. Run this from a clone of the repo.</span>
+<span class="c-kw">from</span> services.compression <span class="c-kw">import</span> compress_for_turn
 
-                                <div id="term-pane-sdk" style="display:none;">
-                                    <div class="ds-code-comment"># Python Library Import</div>
-                                    <div><span class="ds-code-keyword">from</span> services.compression <span class="ds-code-keyword">import</span> compress_for_turn</div>
-                                    <br/>
-                                    <div>res = compress_for_turn(context=chat_history, user_query=<span class="ds-code-string">"What failed?"</span>, mode=<span class="ds-code-string">"compiler"</span>)</div>
-                                    <div>print(<span class="ds-code-string">f"Tokens Saved: {res['tokens_saved_pct']}% | Risk: {res['compression_risk']}"</span>)</div>
-                                </div>
-
-                                <div id="term-pane-mcp" style="display:none;">
-                                    <div class="ds-code-comment"># Coding Agent MCP Plugin Setup (Cursor, Claude Code, Windsurf)</div>
-                                    <div><span class="ds-prompt-sym">$ </span>npm install -g @semantic-llm/mcp-proxy</div>
-                                    <div><span class="ds-prompt-sym">$ </span>npx @semantic-llm/mcp setup --proxy http://localhost:8000</div>
-                                </div>
+res = compress_for_turn(context=long_text, user_query=<span class="c-str">"What is the refund policy?"</span>)
+print(res[<span class="c-str">"original_tokens"</span>], <span class="c-str">"->"</span>, res[<span class="c-str">"kept_tokens"</span>])
+print(res[<span class="c-str">"compressed_text"</span>])</pre>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- VALUE METRICS BAR -->
-        <section class="ds-metrics-bar-section">
-            <div class="ds-container">
-                <div class="ds-val-grid-4">
-                    <div class="ds-val-card">
-                        <div class="ds-val-num">~58–66%</div>
-                        <div class="ds-val-lbl">Mean Token Cut</div>
-                        <div class="ds-val-sub">Dynamic compression eliminates low-value filler across long dumps.</div>
+                <!-- The one static number on the page: the README sample, reproducible with compress_for_turn -->
+                <div class="sample">
+                    <div>
+                        <div class="sample-figure" aria-label="39 estimated tokens trimmed to 15">39<span class="arrow" aria-hidden="true">→</span><span class="to">15</span></div>
+                        <div class="sample-label">Estimated tokens · one sample input</div>
                     </div>
-                    <div class="ds-val-card">
-                        <div class="ds-val-num">99.4%</div>
-                        <div class="ds-val-lbl">Critical Kept</div>
-                        <div class="ds-val-sub">Target >98% oracle retention. Pooled gold containment 99.4%.</div>
-                    </div>
-                    <div class="ds-val-card">
-                        <div class="ds-val-num">&lt;50ms</div>
-                        <div class="ds-val-lbl">Query-Aware CPU Speed</div>
-                        <div class="ds-val-sub">Dense neural ranking runs on CPU without extra LLM summarizer calls.</div>
-                    </div>
-                    <div class="ds-val-card">
-                        <div class="ds-val-num">$0.00</div>
-                        <div class="ds-val-lbl">Semantic Cache Hits</div>
-                        <div class="ds-val-sub">Vector cosine matching serves identical semantic intent instantly.</div>
+                    <div>
+                        <p>
+                            This is the README example sent to <code>/v1/compress</code>: a short context with two sections, where one section answers the question and the other is a repeated log line. It is a single input, not a benchmark. The repo has no benchmark script and no measured average.
+                        </p>
+                        <p>
+                            Token counts everywhere on this page are estimates (<code>max(words × 1.3, chars ÷ 4)</code>), not output from a real tokenizer. For numbers on your own text, use the playground below.
+                        </p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- BENCHMARKS SECTION -->
-        <section class="ds-section" id="benchmarks">
-            <div class="ds-container">
-                <div class="ds-section-header">
-                    <span class="ds-hero-badge">
-                        <span>LLM Context Compression Benchmarks</span>
-                    </span>
-                    <h2 class="ds-text-heading1">
-                        Same budget. Who keeps the answer?
-                    </h2>
-                    <p class="ds-text-body">
-                        Fair test: every method keeps only 35% of prompt tokens. The critical metric is oracle recall — whether answer-bearing evidence survives compression.
-                    </p>
+        <!-- PIPELINE -->
+        <section class="section" id="pipeline">
+            <div class="container">
+                <div class="section-head">
+                    <p class="eyebrow">// How it works</p>
+                    <h2>What happens to a request</h2>
+                    <p>The steps <code>POST /v1/chat/completions</code> runs, in order, with the file each one lives in. Trimming is done by rules, with no model call.</p>
                 </div>
 
-                <div class="ds-bench-table-wrap">
-                    <table class="ds-bench-table">
-                        <thead>
-                            <tr>
-                                <th>Method</th>
-                                <th>Answer-Critical Recall</th>
-                                <th>Mean Token Cut</th>
-                                <th>Extra Model Calls</th>
-                                <th>Latency (CPU)</th>
-                                <th>Quality Gate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="highlight-row">
-                                <td><strong style="color:var(--ds-brand-light);">Semantic LLM (Compiler Mode)</strong></td>
-                                <td><span class="ds-pill-score green">100.0% Oracle Recall</span></td>
-                                <td><strong style="color:var(--ds-green);">65.2% Cut</strong></td>
-                                <td><strong style="color:var(--ds-green);">$0 (Zero Calls)</strong></td>
-                                <td><strong>~42ms</strong></td>
-                                <td><span class="ds-badge simple">Passed (&ge;98%)</span></td>
-                            </tr>
-                            <tr>
-                                <td>H2O Heavy Hitter</td>
-                                <td><span class="ds-pill-score green">97.9%</span></td>
-                                <td>65.0% Cut</td>
-                                <td>$0 (Zero Calls)</td>
-                                <td>~120ms</td>
-                                <td><span class="ds-badge simple">Passed</span></td>
-                            </tr>
-                            <tr>
-                                <td>LLM Summarization Call</td>
-                                <td><span class="ds-pill-score amber">60.5%</span></td>
-                                <td>65.0% Cut</td>
-                                <td><span style="color:var(--ds-red); font-weight:600;">+1 Full LLM Call ($$$)</span></td>
-                                <td>~1,850ms</td>
-                                <td><span class="ds-badge complex">High Cost & Lag</span></td>
-                            </tr>
-                            <tr>
-                                <td>Truncation / FIFO Rolling Window</td>
-                                <td><span class="ds-pill-score red">24.8% (Answers Lost)</span></td>
-                                <td>65.0% Cut</td>
-                                <td>$0 (Zero Calls)</td>
-                                <td>~2ms</td>
-                                <td><span class="ds-badge complex" style="background:rgba(239,68,68,0.2); color:#fca5a5;">Failed Gate</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <ol class="trace">
+                    <li>
+                        <span class="trace-n" aria-hidden="true">01</span>
+                        <div>
+                            <h3>Drop repeated messages</h3>
+                            <p>Messages in the history that repeat an earlier message word for word are removed. The latest message is always kept.</p>
+                        </div>
+                        <span class="trace-file">services/compression.py</span>
+                    </li>
+                    <li>
+                        <span class="trace-n" aria-hidden="true">02</span>
+                        <div>
+                            <h3>Remove duplicate lines</h3>
+                            <p>Repeated lines are dropped. Timestamps and log levels are ignored when comparing, so the same log line at two different times counts as a duplicate. Lines inside code fences are left alone.</p>
+                        </div>
+                        <span class="trace-file">services/compression.py</span>
+                    </li>
+                    <li>
+                        <span class="trace-n" aria-hidden="true">03</span>
+                        <div>
+                            <h3>Split the context into blocks</h3>
+                            <p>The text is cut at markdown headings, code fences, runs of log lines, and paragraph breaks in long passages.</p>
+                        </div>
+                        <span class="trace-file">services/compression.py</span>
+                    </li>
+                    <li>
+                        <span class="trace-n" aria-hidden="true">04</span>
+                        <div>
+                            <h3>Score each block against the question</h3>
+                            <p>The score is the share of the question's keywords found in the block (weight 0.7), plus 0.25 if the block's heading contains one, plus 0.35 for error text when the question is about a failure, minus 0.4 for log blocks with little overlap.</p>
+                        </div>
+                        <span class="trace-file">services/compression.py</span>
+                    </li>
+                    <li>
+                        <span class="trace-n" aria-hidden="true">05</span>
+                        <div>
+                            <h3>Keep the blocks at or above the cutoff</h3>
+                            <p>Blocks that score 0.30 or more are kept and the rest are dropped. At least one block is always kept. The response lists every kept and dropped block with its reason.</p>
+                        </div>
+                        <span class="trace-file">services/compression.py</span>
+                    </li>
+                    <li>
+                        <span class="trace-n" aria-hidden="true">06</span>
+                        <div>
+                            <h3>Look in the cache</h3>
+                            <p>The trimmed text is checked for an exact match first. If there is none, it is embedded with <code>all-MiniLM-L6-v2</code> and compared with stored prompts by cosine similarity. The default threshold is 0.82 (<code>CACHE_SIMILARITY_THRESHOLD</code>).</p>
+                            <span class="branch">hit → return the stored reply, skip steps 07 and 08</span>
+                        </div>
+                        <span class="trace-file">services/cache.py</span>
+                    </li>
+                    <li>
+                        <span class="trace-n" aria-hidden="true">07</span>
+                        <div>
+                            <h3>Pick the model</h3>
+                            <p>Prompts that contain code markers, are longer than 250 characters, or include a keyword such as <code>debug</code> or <code>architecture</code> go to <code>llama-3.3-70b-versatile</code>. Everything else goes to <code>llama-3.1-8b-instant</code>.</p>
+                        </div>
+                        <span class="trace-file">services/llm.py</span>
+                    </li>
+                    <li>
+                        <span class="trace-n" aria-hidden="true">08</span>
+                        <div>
+                            <h3>Call Groq, with fallbacks</h3>
+                            <p>Groq is called first. If that fails, an Ollama server is tried. If both fail, the gateway returns a canned placeholder so the request still completes, and marks it with <code>provider.simulated: true</code>. The reply is then stored in the cache and the request is counted in the metrics.</p>
+                        </div>
+                        <span class="trace-file">services/llm.py</span>
+                    </li>
+                </ol>
+                <p class="footnote">
+                    Steps 02 to 05 are also available on their own as <code>POST /v1/compress</code>. If a request carries a long system message, that message is what gets trimmed.
+                </p>
             </div>
         </section>
 
-        <!-- DEVELOPER STUDIO (SANDBOX & TELEMETRY DASHBOARD) -->
-        <section class="ds-section" id="demo" style="background: rgba(0,0,0,0.2);">
-            <div class="ds-container">
-                <div class="ds-studio-tabs" role="tablist">
-                    <button class="ds-studio-tab-btn active" id="tabbtn-sandbox" onclick="switchTab('sandbox')" role="tab" aria-selected="true" aria-controls="tab-sandbox">Interactive Local Playground</button>
-                    <button class="ds-studio-tab-btn" id="tabbtn-analytics" onclick="switchTab('analytics')" role="tab" aria-selected="false" aria-controls="tab-analytics">Impact Dashboard</button>
+        <!-- PLAYGROUND + REQUEST LOG -->
+        <section class="section section-alt" id="playground">
+            <div class="container">
+                <div class="section-head">
+                    <p class="eyebrow">// Try it</p>
+                    <h2>Playground</h2>
+                    <p>Send a context and a question through this server. Every number in this section is read from this server's API responses.</p>
                 </div>
 
-                <!-- TAB 1: SANDBOX / PLAYGROUND -->
-                <div id="tab-sandbox" class="ds-tab-pane active" role="tabpanel" aria-labelledby="tabbtn-sandbox">
-                    <div class="ds-sandbox-grid">
-                        <!-- Left: Input & Inspector -->
-                        <div class="ds-glass-panel">
-                            <div class="ds-panel-eyebrow">
-                                <span>1. Select Preset & Input Context</span>
-                                <span class="ds-token-badge" id="prompt-char-count">0 chars · ~0 tokens</span>
+                <div class="tabs studio-tabs" role="tablist" aria-label="Playground views" data-tabs id="studio-tabs">
+                    <button type="button" class="tab" role="tab" id="tab-play" aria-controls="panel-play" aria-selected="true">Playground</button>
+                    <button type="button" class="tab" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="false" tabindex="-1">Request log</button>
+                </div>
+
+                <!-- PANEL 1: PLAYGROUND -->
+                <div id="panel-play" role="tabpanel" aria-labelledby="tab-play">
+                    <div class="play-grid">
+                        <div class="panel">
+                            <div class="panel-head">
+                                <span class="panel-title">1 · Context and question</span>
+                                <span class="chip plain" id="char-count">0 chars · ~0 est. tokens</span>
                             </div>
 
-                            <!-- Mode Selector -->
-                            <div class="ds-mode-selector-row">
-                                <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ds-muted); margin-right:4px;">Mode:</span>
-                                <button type="button" class="ds-mode-pill active" id="mode-compiler" onclick="setCompressionMode('compiler')">Compiler Mode (Auto)</button>
-                                <button type="button" class="ds-mode-pill" id="mode-precision" onclick="setCompressionMode('precision')">Precision (&ge;98% Gate)</button>
-                                <button type="button" class="ds-mode-pill" id="mode-fixed" onclick="setCompressionMode('fixed')">Fixed 35% Budget</button>
+                            <div class="preset-row" role="group" aria-label="Example inputs">
+                                <button type="button" class="preset" data-preset="support" aria-pressed="false">Support ticket</button>
+                                <button type="button" class="preset" data-preset="repeat" aria-pressed="false">Repeat question (run twice)</button>
+                                <button type="button" class="preset" data-preset="diff" aria-pressed="false">Diff and logs</button>
+                                <button type="button" class="preset" data-preset="rag" aria-pressed="false">RAG chunks</button>
+                                <button type="button" class="preset" data-preset="complex" aria-pressed="false">Architecture prompt</button>
+                            </div>
+                            <p class="preset-hint" id="preset-hint" aria-live="polite"></p>
+
+                            <div class="field">
+                                <label for="chat-input">
+                                    Context
+                                    <span class="hint">logs, docs, diffs, chat history</span>
+                                </label>
+                                <textarea class="textarea" id="chat-input" spellcheck="false" placeholder="Paste the long context here…"></textarea>
                             </div>
 
-                            <!-- Presets -->
-                            <div class="ds-chip-row" aria-label="Preset Prompts">
-                                <button type="button" class="ds-chip" onclick="loadPreset('support')">⚡ Support Ticket</button>
-                                <button type="button" class="ds-chip" onclick="loadPreset('paraphrase')">🎯 Semantic Cache Hit</button>
-                                <button type="button" class="ds-chip" onclick="loadPreset('diff')">🧹 Diff & Code Trace</button>
-                                <button type="button" class="ds-chip" onclick="loadPreset('rag')">📚 RAG Search Chunks</button>
-                                <button type="button" class="ds-chip" onclick="loadPreset('complex')">🧠 Architecture PRD</button>
+                            <div class="field">
+                                <label for="query-input">
+                                    Question
+                                    <span class="hint">blocks are scored against this</span>
+                                </label>
+                                <textarea class="textarea question" id="query-input" rows="2" placeholder="What do you want to know about the context?"></textarea>
                             </div>
 
-                            <textarea class="ds-textarea" id="chat-input" placeholder="Paste your long context, logs, code diffs, or chat history here..." oninput="updateCharCount()" onkeydown="handleKey(event)"></textarea>
+                            <p class="notice">
+                                Requests are logged. The Request log tab shows recent prompts to anyone who opens this page, so do not paste secrets or personal data.
+                            </p>
 
-                            <input type="text" class="ds-query-input" id="query-input" placeholder="User Query (e.g. 'What was the refund decision?')" value="What was the supervisor decision regarding the refund request on invoice INV-2026-08?">
-
-                            <div class="ds-prompt-footer">
-                                <div style="font-size:11.5px; color:var(--ds-muted);">
-                                    Press <kbd style="background:rgba(255,255,255,0.06); padding:2px 5px; border:1px solid var(--ds-border-default); border-radius:4px; font-family:var(--font-mono);">Cmd/Ctrl+Enter</kbd>
+                            <div class="send-row">
+                                <span class="kbd-hint"><kbd>Ctrl</kbd> or <kbd>⌘</kbd> + <kbd>Enter</kbd> to send</span>
+                                <div class="send-actions">
+                                    <button type="button" class="btn" id="btn-cancel" hidden>Cancel</button>
+                                    <button type="button" class="btn btn-primary" id="btn-send">
+                                        <span class="spinner" id="btn-spinner" hidden aria-hidden="true"></span>
+                                        <span id="btn-text">Trim and send</span>
+                                    </button>
                                 </div>
-                                <button class="ds-btn-primary" id="btn-send" onclick="sendMessage()">
-                                    <span id="btn-spinner" style="display:none; width:13px; height:13px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></span>
-                                    <span id="btn-text">Compress & Route</span>
-                                </button>
                             </div>
 
-                            <div id="error-alert" style="display:none; margin-top:1rem; padding:0.75rem 1rem; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); border-radius:var(--radius-sm); color:#fca5a5; font-size:13px;"></div>
+                            <div class="alert" id="error-alert" role="alert" hidden>
+                                <p id="error-text"></p>
+                                <button type="button" class="btn btn-sm" id="btn-retry">Try again</button>
+                            </div>
+                            <p class="sr-only" id="send-status" role="status" aria-live="polite"></p>
 
-                            <!-- Results Inspector (Streamlined into 3 Clean Tabs) -->
-                            <div class="ds-result-section" id="result-container" style="display:none;">
-                                <div class="ds-panel-eyebrow">
-                                    <span>2. Optimization & Evidence Breakdown</span>
+                            <!-- RESULT -->
+                            <div class="result" id="result" hidden>
+                                <div class="panel-head">
+                                    <span class="panel-title">2 · What the gateway did</span>
+                                </div>
+                                <div class="result-chips" id="result-chips"></div>
+
+                                <div class="tabs result-tabs" role="tablist" aria-label="Result views" data-tabs id="result-tabs">
+                                    <button type="button" class="tab" role="tab" id="rt-reply" aria-controls="rp-reply" aria-selected="true">Reply</button>
+                                    <button type="button" class="tab" role="tab" id="rt-diff" aria-controls="rp-diff" aria-selected="false" tabindex="-1">Context diff <span id="rt-diff-pct"></span></button>
+                                    <button type="button" class="tab" role="tab" id="rt-details" aria-controls="rp-details" aria-selected="false" tabindex="-1">Details</button>
                                 </div>
 
-                                <div class="ds-res-tabs">
-                                    <button type="button" class="ds-res-tab-btn active" id="btn-res-output" onclick="switchResultTab('output')">Model Response</button>
-                                    <button type="button" class="ds-res-tab-btn" id="btn-res-compression" onclick="switchResultTab('compression')">Context Diff (<span id="res-tab-comp-pct">0%</span>)</button>
-                                    <button type="button" class="ds-res-tab-btn" id="btn-res-diag" onclick="switchResultTab('diag')">Diagnostics & Impact</button>
+                                <div role="tabpanel" id="rp-reply" aria-labelledby="rt-reply" tabindex="0">
+                                    <div class="placeholder-banner" id="placeholder-banner" hidden></div>
+                                    <p class="cache-note" id="cache-note" hidden></p>
+                                    <div class="reply" id="reply-text"></div>
                                 </div>
 
-                                <!-- Tab 1: Output -->
-                                <div class="ds-res-pane active" id="pane-output">
-                                    <div id="res-text" style="color:var(--ds-primary); white-space:pre-wrap;"></div>
-                                </div>
-
-                                <!-- Tab 2: Compression Diff & Blocks -->
-                                <div class="ds-res-pane" id="pane-compression">
-                                    <div style="margin-bottom:0.65rem; font-weight:600; color:#ffffff;" id="res-comp-summary"></div>
-                                    <div class="ds-diff-box">
-                                        <div class="ds-diff-orig">
-                                            <div style="font-size:10.5px; font-weight:bold; margin-bottom:0.2rem;">ORIGINAL PROMPT CONTEXT (<span id="diff-orig-tokens">0</span> tokens)</div>
-                                            <div id="diff-orig-text"></div>
+                                <div role="tabpanel" id="rp-diff" aria-labelledby="rt-diff" tabindex="0" hidden>
+                                    <p class="diff-summary" id="diff-summary"></p>
+                                    <p class="diff-note" id="diff-note"></p>
+                                    <div class="diff-cols">
+                                        <div class="diff-col">
+                                            <h4>Original context · <span id="diff-orig-tokens">0</span> est. tokens</h4>
+                                            <pre id="diff-orig-text" tabindex="0" aria-label="Original context"></pre>
                                         </div>
-                                        <div class="ds-diff-opt">
-                                            <div style="font-size:10.5px; font-weight:bold; margin-bottom:0.2rem;">COMPRESSED EVIDENCE (<span id="diff-opt-tokens">0</span> tokens — <span id="diff-saved-tokens">0</span> saved)</div>
-                                            <div id="diff-opt-text"></div>
+                                        <div class="diff-col after">
+                                            <h4>After trimming · <span id="diff-opt-tokens">0</span> est. tokens</h4>
+                                            <pre id="diff-opt-text" tabindex="0" aria-label="Context after trimming"></pre>
                                         </div>
                                     </div>
-                                    <ul id="res-savings-notes" style="margin-top:0.65rem; padding-left:1.25rem; font-size:12px; color:var(--ds-description);"></ul>
-                                </div>
-
-                                <!-- Tab 3: Diagnostics & Sustainability Impact -->
-                                <div class="ds-res-pane" id="pane-diag">
-                                    <div class="ds-diag-grid">
-                                        <div class="ds-diag-card">
-                                            <div class="ds-diag-lbl">Semantic Cache Status</div>
-                                            <div class="ds-diag-val" id="diag-cache">—</div>
+                                    <div class="blocks" id="blocks" hidden>
+                                        <div>
+                                            <h4>Kept blocks (<span id="kept-count">0</span>)</h4>
+                                            <ul class="block-list" id="kept-list"></ul>
                                         </div>
-                                        <div class="ds-diag-card">
-                                            <div class="ds-diag-lbl">Selected Model Route</div>
-                                            <div class="ds-diag-val" id="diag-model" style="font-family:var(--font-mono); font-size:0.85rem;">—</div>
-                                        </div>
-                                        <div class="ds-diag-card">
-                                            <div class="ds-diag-lbl">Total Latency</div>
-                                            <div class="ds-diag-val" id="diag-latency">—</div>
-                                        </div>
-                                        <div class="ds-diag-card">
-                                            <div class="ds-diag-lbl">Estimated Cost Saved</div>
-                                            <div class="ds-diag-val" id="diag-cost" style="color:var(--ds-green);">—</div>
-                                        </div>
-                                        <div class="ds-diag-card">
-                                            <div class="ds-diag-lbl">CO₂ Avoided</div>
-                                            <div class="ds-diag-val" id="diag-co2" style="color:var(--ds-green);">0.0000 g</div>
-                                        </div>
-                                        <div class="ds-diag-card">
-                                            <div class="ds-diag-lbl">GPU-sec Spared</div>
-                                            <div class="ds-diag-val" id="diag-gpu">0.000 s</div>
+                                        <div>
+                                            <h4>Dropped blocks (<span id="dropped-count">0</span>)</h4>
+                                            <ul class="block-list" id="dropped-list"></ul>
                                         </div>
                                     </div>
                                 </div>
+
+                                <div role="tabpanel" id="rp-details" aria-labelledby="rt-details" tabindex="0" hidden>
+                                    <dl class="details" id="details"></dl>
+                                    <p class="details-note" id="details-note"></p>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Right: Streamlined Live Telemetry Panel -->
-                        <div class="ds-glass-panel">
-                            <div class="ds-panel-eyebrow">
-                                <span>LIVE INFERENCE IMPACT</span>
-                                <span style="font-size:11px; color:var(--ds-green); font-weight:600;"><span class="ds-status-dot-live" style="display:inline-block; vertical-align:middle; margin-right:4px;"></span> ACTIVE</span>
+                        <!-- COUNTERS -->
+                        <aside class="panel" aria-labelledby="counters-title">
+                            <div class="panel-head">
+                                <span class="panel-title" id="counters-title">Gateway counters</span>
+                                <span class="chip" id="metrics-status" role="status">Loading</span>
                             </div>
-
-                            <ul style="list-style:none;">
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Total Requests</span>
-                                    <span class="ds-stat-val" id="val-requests">0</span>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Cache Hit Rate</span>
-                                    <span class="ds-stat-val brand" id="val-hitrate">0.0%</span>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Tokens Saved</span>
-                                    <span class="ds-stat-val green" id="val-tokens-saved">0</span>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">API Cost Saved</span>
-                                    <span class="ds-stat-val green" id="val-saved">$0.00000</span>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Avg Direct Miss Latency</span>
-                                    <span class="ds-stat-val" id="val-latency-direct">—</span>
-                                </li>
-                                <li class="ds-stat-row">
-                                    <span class="ds-stat-name">Avg Vector Cache Hit</span>
-                                    <span class="ds-stat-val brand" id="val-latency-cached">—</span>
-                                </li>
+                            <ul class="stat-list">
+                                <li><span class="stat-name">Requests</span><span class="stat-val" id="val-requests">—</span></li>
+                                <li><span class="stat-name">Cache hit rate</span><span class="stat-val" id="val-hitrate">—</span></li>
+                                <li><span class="stat-name">Est. tokens trimmed</span><span class="stat-val" id="val-tokens-saved">—</span></li>
+                                <li><span class="stat-name">Est. cost difference</span><span class="stat-val" id="val-saved">—</span></li>
+                                <li><span class="stat-name">Avg latency, cache miss</span><span class="stat-val" id="val-latency-miss">—</span></li>
+                                <li><span class="stat-name">Avg latency, cache hit</span><span class="stat-val" id="val-latency-hit">—</span></li>
                             </ul>
-                        </div>
+                            <div class="metrics-error" id="metrics-error" hidden>
+                                <span id="metrics-error-text"></span>
+                                <button type="button" class="btn btn-sm" data-metrics-retry>Retry</button>
+                            </div>
+                            <p class="panel-foot">
+                                Read from <code>/api/metrics</code>. These count every request this server has handled, from all visitors. They are kept in server memory unless <code>REDIS_URL</code> is set, so they reset when the server restarts. Cost is an estimate against sending the untrimmed prompt to the 70B model.
+                            </p>
+                        </aside>
                     </div>
                 </div>
 
-                <!-- TAB 2: IMPACT DASHBOARD -->
-                <div id="tab-analytics" class="ds-tab-pane" role="tabpanel" aria-labelledby="tabbtn-analytics">
-                    <div class="ds-dash-summary-grid">
-                        <div class="ds-summary-card">
-                            <div class="ds-summary-lbl">Total Requests</div>
-                            <div class="ds-summary-val" id="dash-requests">0</div>
-                        </div>
-                        <div class="ds-summary-card">
-                            <div class="ds-summary-lbl">Cache Hit Rate</div>
-                            <div class="ds-summary-val" style="color:var(--ds-brand);" id="dash-hitrate">0.0%</div>
-                        </div>
-                        <div class="ds-summary-card">
-                            <div class="ds-summary-lbl">Total Tokens Saved</div>
-                            <div class="ds-summary-val" style="color:var(--ds-green);" id="dash-tokens-saved">0</div>
-                        </div>
-                        <div class="ds-summary-card">
-                            <div class="ds-summary-lbl">Estimated Cost Saved</div>
-                            <div class="ds-summary-val" style="color:var(--ds-green);" id="dash-cost-saved">$0.00000</div>
-                        </div>
+                <!-- PANEL 2: REQUEST LOG -->
+                <div id="panel-log" role="tabpanel" aria-labelledby="tab-log" hidden>
+                    <div class="summary-grid">
+                        <div class="summary-card"><div class="lbl">Requests</div><div class="val" id="dash-requests">—</div></div>
+                        <div class="summary-card"><div class="lbl">Cache hit rate</div><div class="val" id="dash-hitrate">—</div></div>
+                        <div class="summary-card"><div class="lbl">Est. tokens trimmed</div><div class="val" id="dash-tokens-saved">—</div></div>
+                        <div class="summary-card"><div class="lbl">Est. cost difference</div><div class="val" id="dash-cost-saved">—</div></div>
+                    </div>
+                    <div class="metrics-error" id="log-error" hidden style="margin: 0 0 16px;">
+                        <span id="log-error-text"></span>
+                        <button type="button" class="btn btn-sm" data-metrics-retry>Retry</button>
                     </div>
 
-                    <div class="ds-chart-box">
-                        <div class="ds-panel-eyebrow">
-                            <span>Latency Comparison: Direct Upstream Miss vs Vector Cache Hit (ms)</span>
+                    <div class="panel chart-box">
+                        <div class="panel-head">
+                            <span class="panel-title">Latency per request (ms), most recent 20</span>
                         </div>
-                        <div style="height: calc(100% - 25px);">
-                            <canvas id="latencyChart"></canvas>
+                        <div class="chart-canvas" id="chart-wrap" hidden>
+                            <canvas id="latency-chart" role="img" aria-label="Bar chart of latency in milliseconds for the most recent requests, coloured by cache hit or miss. The table below lists the same values."></canvas>
                         </div>
+                        <div class="empty" id="chart-empty">Loading requests…</div>
                     </div>
 
-                    <div class="ds-table-wrap">
+                    <div class="table-wrap" role="region" aria-labelledby="log-caption" tabindex="0">
                         <table>
+                            <caption class="sr-only" id="log-caption">Recent requests</caption>
                             <thead>
                                 <tr>
-                                    <th>Timestamp</th>
-                                    <th>Prompt</th>
-                                    <th>Routing Tier</th>
-                                    <th>Model Executed</th>
-                                    <th>Cache Status</th>
-                                    <th>Tokens (In / Opt)</th>
-                                    <th>Latency</th>
-                                    <th>Cost Saved</th>
+                                    <th scope="col">Time</th>
+                                    <th scope="col">Prompt</th>
+                                    <th scope="col">Tier</th>
+                                    <th scope="col">Model</th>
+                                    <th scope="col">Cache</th>
+                                    <th scope="col">Est. tokens (in → sent)</th>
+                                    <th scope="col">Latency</th>
+                                    <th scope="col">Est. cost diff.</th>
                                 </tr>
                             </thead>
                             <tbody id="queries-tbody">
-                                <tr>
-                                    <td colspan="8" style="text-align:center; color:var(--ds-muted); padding:2rem;">No queries recorded yet. Send a request in the Sandbox!</td>
-                                </tr>
+                                <tr><td colspan="8" class="state">Loading requests…</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -925,491 +982,750 @@
         </section>
     </main>
 
-    <!-- SETUP GUIDE & DOCS MODAL -->
-    <div class="ds-modal-backdrop" id="docs-modal" onclick="if(event.target===this) closeDocsModal()">
-        <div class="ds-modal-card">
-            <div class="ds-modal-head">
-                <h3 style="font-size:1.25rem; font-weight:700; color:#ffffff;">Semantic LLM Integration Guide</h3>
-                <button class="ds-modal-close" onclick="closeDocsModal()">&times;</button>
-            </div>
-            <p style="color:var(--ds-description); margin-bottom:1.25rem; font-size:0.9rem;">
-                Drop Semantic Gateway in front of OpenAI, Anthropic, Groq, or local models.
+    <!-- DOCS DIALOG. A native <dialog> opened with showModal() traps focus, closes on Esc and returns focus to the opener. -->
+    <dialog class="docs" id="docs-modal" role="dialog" aria-modal="true" aria-labelledby="docs-title">
+        <div class="docs-head">
+            <h2 id="docs-title">Using the gateway</h2>
+            <button type="button" class="btn btn-sm btn-icon" data-close-docs aria-label="Close docs">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>
+            </button>
+        </div>
+        <div class="docs-body">
+            <p>
+                Semantic Gateway runs in front of Groq-hosted Llama models, with an Ollama server as a fallback. Both endpoints below are served with and without the <code>/v1</code> prefix. The generated OpenAPI reference is at <a href="/docs">/docs</a>.
             </p>
 
-            <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:0.4rem; color:#ffffff;">1. Context Compression Endpoint (POST /v1/compress)</h4>
-            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:0.85rem; font-family:var(--font-mono); font-size:12px; color:#cbd5e1; margin-bottom:1.25rem;">
-curl -X POST http://localhost:8000/v1/compress \
-  -H <span class="ds-code-string">"Content-Type: application/json"</span> \
-  -d '{
-    <span class="ds-code-string">"context"</span>: <span class="ds-code-string">"Long context..."</span>,
-    <span class="ds-code-string">"query"</span>: <span class="ds-code-string">"What failed?"</span>,
-    <span class="ds-code-string">"mode"</span>: <span class="ds-code-string">"compiler"</span>
-  }'
+            <h3>1. Trim a context: POST /v1/compress</h3>
+            <div class="codeblock">
+                <button type="button" class="btn btn-sm" data-copy-block>Copy</button>
+<pre class="code">curl -X POST http://localhost:8000/v1/compress \
+  -H "Content-Type: application/json" \
+  -d '{"context": "Long context...", "query": "What failed?"}'</pre>
             </div>
+            <ul>
+                <li>Optional <code>mode</code>: <code>compiler</code> (default), <code>precision</code> for a stricter cutoff, or <code>fixed</code> with a <code>budget_ratio</code> between 0.1 and 1.0.</li>
+                <li>The response includes <code>compressed_text</code>, estimated token counts, and <code>kept_blocks</code> / <code>dropped_blocks</code> with a reason for each.</li>
+            </ul>
 
-            <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:0.4rem; color:#ffffff;">2. Python Library SDK</h4>
-            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:0.85rem; font-family:var(--font-mono); font-size:12px; color:#cbd5e1; margin-bottom:1.25rem;">
-<span class="ds-code-keyword">from</span> services.compression <span class="ds-code-keyword">import</span> compress_for_turn
-
-result = compress_for_turn(context=chat_history, user_query=<span class="ds-code-string">"Explain connection pool timeout"</span>)
-print(result[<span class="ds-code-string">"compressed_text"</span>], result[<span class="ds-code-string">"tokens_saved_pct"</span>])
+            <h3>2. Chat: POST /v1/chat/completions</h3>
+            <div class="codeblock">
+                <button type="button" class="btn btn-sm" data-copy-block>Copy</button>
+<pre class="code">curl -i -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "What is the capital of France?"}]}'</pre>
             </div>
+            <ul>
+                <li>Takes OpenAI-style <code>messages</code>. The <code>model</code> field is ignored because the gateway picks the model, and streaming is not implemented.</li>
+                <li>The response adds <code>compression</code>, <code>cache</code>, <code>routing</code>, <code>cost</code>, <code>latency</code> and <code>provider</code> objects to the usual chat completion fields.</li>
+                <li><code>provider.simulated</code> is <code>true</code> when no model was reachable and the reply is a canned placeholder.</li>
+            </ul>
 
-            <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:0.4rem; color:#ffffff;">3. Coding Agent MCP Plugin Setup (Cursor / Windsurf)</h4>
-            <div style="background:rgba(0,0,0,0.5); border:1px solid var(--ds-border-default); border-radius:8px; padding:0.85rem; font-family:var(--font-mono); font-size:12px; color:#cbd5e1;">
-<div class="ds-code-comment"># .cursor/mcp.json</div>
-{
-  <span class="ds-code-string">"mcpServers"</span>: {
-    <span class="ds-code-string">"semantic-gateway"</span>: {
-      <span class="ds-code-string">"command"</span>: <span class="ds-code-string">"npx"</span>,
-      <span class="ds-code-string">"args"</span>: [<span class="ds-code-string">"-y"</span>, <span class="ds-code-string">"@semantic-llm/mcp-proxy"</span>, <span class="ds-code-string">"--port"</span>, <span class="ds-code-string">"8000"</span>]
-    }
-  }
-}
-            </div>
+            <h3>3. Python: import from a clone of the repo</h3>
+            <div class="codeblock">
+                <button type="button" class="btn btn-sm" data-copy-block>Copy</button>
+<pre class="code">from services.compression import compress_for_turn
 
-            <div style="margin-top:1.5rem; text-align:right;">
-                <button class="ds-btn-primary" onclick="closeDocsModal()">Got it</button>
+result = compress_for_turn(context=long_text, user_query="What failed?")
+print(result["compressed_text"], result["tokens_saved_pct"])</pre>
             </div>
+            <ul>
+                <li>This is the module inside the repo, not a package published to PyPI.</li>
+            </ul>
+
+            <h3>Good to know</h3>
+            <ul>
+                <li>The endpoints have no authentication.</li>
+                <li>Token counts are estimates, so they will differ from a real tokenizer.</li>
+                <li>Without <code>QDRANT_URL</code> and <code>REDIS_URL</code>, the cache and the metrics live in the server process and are lost on restart.</li>
+            </ul>
         </div>
-    </div>
+        <div class="docs-foot">
+            <button type="button" class="btn btn-primary" data-close-docs>Close</button>
+        </div>
+    </dialog>
 
-    <!-- CLEAN FOOTER -->
-    <footer class="ds-footer-clean">
-        <div class="ds-container">
-            <div class="ds-footer-clean-row">
-                <div>
-                    <strong style="color:#ffffff;">Semantic Gateway</strong> &middot; Apache 2.0 Open Source
-                </div>
-                <ul class="ds-footer-clean-links">
-                    <li><a href="#demo" onclick="switchTab('sandbox')">Sandbox</a></li>
-                    <li><a href="#benchmarks">Benchmarks</a></li>
-                    <li><a href="javascript:void(0)" onclick="openDocsModal()">Docs</a></li>
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-row">
+                <div><strong>Semantic Gateway</strong> · source on GitHub</div>
+                <ul class="footer-links">
+                    <li><a href="#pipeline">How it works</a></li>
+                    <li><a href="#playground" data-open-tab="tab-play">Playground</a></li>
+                    <li><button type="button" data-open-docs>Docs</button></li>
                     <li><a href="https://github.com/anothercodingguy/SemanticLLM" target="_blank" rel="noopener noreferrer">GitHub</a></li>
                 </ul>
             </div>
         </div>
     </footer>
 
-    <!-- SCRIPT LOGIC -->
     <script>
-        // Starfield background particle animation
-        (function() {
-            const canvas = document.getElementById('hero-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let w = canvas.width = window.innerWidth;
-            let h = canvas.height = window.innerHeight;
+    (function () {
+        'use strict';
 
-            window.addEventListener('resize', () => {
-                w = canvas.width = window.innerWidth;
-                h = canvas.height = window.innerHeight;
+        var $ = function (id) { return document.getElementById(id); };
+        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Longest wait before giving up. The server tries Groq (12 s timeout) and
+        // then Ollama (6 s timeout) before falling back, so 18 s is a normal worst case.
+        var REQUEST_TIMEOUT_MS = 40000;
+        var METRICS_TIMEOUT_MS = 10000;
+        var METRICS_POLL_MS = 8000;
+
+        // Small DOM builder: el('span', {class: 'chip'}, 'text'). Text is always
+        // set with textContent, so API data can never be parsed as HTML.
+        function el(tag, attrs, children) {
+            var node = document.createElement(tag);
+            Object.keys(attrs || {}).forEach(function (key) {
+                if (key === 'class') node.className = attrs[key];
+                else node.setAttribute(key, attrs[key]);
             });
+            [].concat(children === undefined || children === null ? [] : children).forEach(function (child) {
+                node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+            });
+            return node;
+        }
+        function num(value) { var n = Number(value); return isFinite(n) ? n : 0; }
+        function int(value) { return Math.round(num(value)).toLocaleString(); }
+        function pct(value) { return num(value).toFixed(1) + '%'; }
+        function pctShort(value) { return Number(num(value).toFixed(1)) + '%'; }
+        function ms(value) { return Math.round(num(value)).toLocaleString() + ' ms'; }
+        function usd(value) { return '$' + num(value).toFixed(6); }
 
-            const stars = Array.from({ length: 50 }, () => ({
-                x: Math.random() * w,
-                y: Math.random() * h,
-                r: Math.random() * 1.4 + 0.4,
-                alpha: Math.random() * 0.7 + 0.2,
-                vx: (Math.random() - 0.5) * 0.15,
-                vy: (Math.random() - 0.5) * 0.15
-            }));
-
-            function render() {
-                ctx.clearRect(0, 0, w, h);
-                for (let i = 0; i < stars.length; i++) {
-                    for (let j = i + 1; j < stars.length; j++) {
-                        const dx = stars[i].x - stars[j].x;
-                        const dy = stars[i].y - stars[j].y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 110) {
-                            ctx.strokeStyle = `rgba(77, 136, 255, ${0.12 * (1 - dist / 110)})`;
-                            ctx.lineWidth = 0.5;
-                            ctx.beginPath();
-                            ctx.moveTo(stars[i].x, stars[i].y);
-                            ctx.lineTo(stars[j].x, stars[j].y);
-                            ctx.stroke();
-                        }
-                    }
-                }
-                stars.forEach(s => {
-                    s.x += s.vx; s.y += s.vy;
-                    if (s.x < 0) s.x = w; if (s.x > w) s.x = 0;
-                    if (s.y < 0) s.y = h; if (s.y > h) s.y = 0;
-                    ctx.fillStyle = `rgba(165, 205, 255, ${s.alpha})`;
-                    ctx.beginPath();
-                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-                    ctx.fill();
+        // ── Tabs (keyboard: arrows, Home, End) ──────────────────────────
+        function selectTab(tab, moveFocus) {
+            var list = tab.closest('[role="tablist"]');
+            list.querySelectorAll('[role="tab"]').forEach(function (other) {
+                var selected = other === tab;
+                other.setAttribute('aria-selected', selected ? 'true' : 'false');
+                other.tabIndex = selected ? 0 : -1;
+                var panel = $(other.getAttribute('aria-controls'));
+                if (panel) panel.hidden = !selected;
+            });
+            if (moveFocus) tab.focus();
+            list.dispatchEvent(new CustomEvent('tabchange', { detail: tab.id }));
+        }
+        document.querySelectorAll('[data-tabs]').forEach(function (list) {
+            var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+            tabs.forEach(function (tab, index) {
+                tab.addEventListener('click', function () { selectTab(tab, false); });
+                tab.addEventListener('keydown', function (event) {
+                    var next = null;
+                    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = tabs[(index + 1) % tabs.length];
+                    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = tabs[(index - 1 + tabs.length) % tabs.length];
+                    else if (event.key === 'Home') next = tabs[0];
+                    else if (event.key === 'End') next = tabs[tabs.length - 1];
+                    if (next) { event.preventDefault(); selectTab(next, true); }
                 });
-                requestAnimationFrame(render);
+            });
+        });
+        // Links such as "Request log" in the nav jump to the section and open a tab
+        document.querySelectorAll('[data-open-tab]').forEach(function (link) {
+            link.addEventListener('click', function () {
+                var tab = $(link.getAttribute('data-open-tab'));
+                if (tab) selectTab(tab, false);
+            });
+        });
+
+        // ── Phone menu ──────────────────────────────────────────────────
+        var navToggle = $('nav-toggle');
+        var navWrap = $('nav-wrap');
+        function setNav(open) {
+            navWrap.setAttribute('data-open', open ? 'true' : 'false');
+            navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        navToggle.addEventListener('click', function () {
+            setNav(navToggle.getAttribute('aria-expanded') !== 'true');
+        });
+        navWrap.addEventListener('click', function (event) {
+            if (event.target.closest('a, button')) setNav(false);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && navToggle.getAttribute('aria-expanded') === 'true') {
+                setNav(false);
+                navToggle.focus();
             }
-            render();
-        })();
+        });
 
-        let latencyChart = null;
-        let currentCompressionMode = 'compiler';
+        // ── Docs dialog ─────────────────────────────────────────────────
+        var docs = $('docs-modal');
+        var docsOpener = null;
+        document.querySelectorAll('[data-open-docs]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                docsOpener = button;
+                if (typeof docs.showModal === 'function') docs.showModal();
+                else docs.setAttribute('open', '');
+            });
+        });
+        document.querySelectorAll('[data-close-docs]').forEach(function (button) {
+            button.addEventListener('click', function () { docs.close(); });
+        });
+        // A click on the dimmed area outside the card lands on the <dialog> itself
+        docs.addEventListener('click', function (event) { if (event.target === docs) docs.close(); });
+        docs.addEventListener('close', function () {
+            // The menu button is hidden once the phone menu closes, so fall back to the toggle
+            var target = docsOpener && docsOpener.offsetParent !== null ? docsOpener : navToggle;
+            if (target && target.offsetParent !== null) target.focus();
+            docsOpener = null;
+        });
 
-        const PRESETS = {
+        // ── Copy buttons: only say "Copied" when the clipboard call worked ──
+        async function copyText(text, label) {
+            var original = label.getAttribute('data-label') || label.textContent;
+            label.setAttribute('data-label', original);
+            var ok = false;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    ok = true;
+                }
+            } catch (err) {
+                ok = false;
+            }
+            label.textContent = ok ? 'Copied' : 'Copy failed';
+            setTimeout(function () { label.textContent = original; }, 2000);
+        }
+        $('term-copy').addEventListener('click', function () {
+            var pre = document.querySelector('#quickstart [role="tabpanel"]:not([hidden]) pre');
+            if (pre) copyText(pre.getAttribute('data-copy') || pre.textContent, $('term-copy-label'));
+        });
+        document.querySelectorAll('[data-copy-block]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                copyText(button.parentElement.querySelector('pre').textContent, button);
+            });
+        });
+
+        // ── Presets ─────────────────────────────────────────────────────
+        var PRESETS = {
             support: {
                 context: "## Customer Support Ticket History\nUser ID: usr_9281742 | Plan: Enterprise Tier | Region: US-East\n[2026-08-16 09:12:00 INFO] Ticket #8841 created: Billing mismatch on invoice INV-2026-08.\n[2026-08-16 09:12:00 INFO] Ticket #8841 created: Billing mismatch on invoice INV-2026-08.\n[2026-08-16 09:15:22 DEBUG] Automated webhook dispatched to Stripe Billing API.\n[2026-08-16 09:15:22 DEBUG] Automated webhook dispatched to Stripe Billing API.\n\n### Account Overview\nAccount status is active. Payment method ending in 4242 failed due to bank verification hold.\nRefund request of $420.00 approved by billing supervisor on 2026-08-15.\n\n### Unrelated Feature Requests\nUser requested dark mode for the analytics dashboard and support for export to parquet format.",
-                query: "What was the supervisor decision regarding the refund request on invoice INV-2026-08?"
+                query: "What was the supervisor decision regarding the refund request on invoice INV-2026-08?",
+                hint: "A ticket dump with duplicated log lines and an unrelated section."
             },
-            paraphrase: {
+            repeat: {
                 context: "### API Function Specification\ndef fetch_user(user_id: str):\n    # Queries user database\n    row = db.query('SELECT * FROM users WHERE id = %s', user_id)\n    if not row:\n        return None\n    return User(row)",
-                query: "What happens if fetch_user cannot find the database row?"
+                query: "What happens if fetch_user cannot find the database row?",
+                hint: "Send this twice. The first run is a cache miss and stores the reply. The second run should come back as a cache hit."
             },
             diff: {
                 context: "```diff\ndiff --git a/services/auth.py b/services/auth.py\nindex 8a3f21..b9c412 100644\n--- a/services/auth.py\n+++ b/services/auth.py\n@@ -42,7 +42,7 @@ def verify_jwt_token(token: str) -> Optional[dict]:\n-    except jwt.ExpiredSignatureError:\n+    except jwt.ExpiredSignatureError as err:\n+        logger.warning(f'Token expired: {err}')\n         return None\n```\n[2026-08-18 10:00:00 INFO] Worker process 4421 started\n[2026-08-18 10:00:00 INFO] Worker process 4421 started\n[2026-08-18 10:00:01 DEBUG] Heartbeat signal received from agent runner",
-                query: "What exception does verify_jwt_token catch and log?"
+                query: "What exception does verify_jwt_token catch and log?",
+                hint: "A code diff followed by log lines that have nothing to do with the question."
             },
             rag: {
-                context: "### Document: Architecture Overview\nSemantic Gateway provides query-aware prompt compression and sub-50ms vector caching.\nSemantic Gateway provides query-aware prompt compression and sub-50ms vector caching.\n\n### Document: Pricing Model\nllama-3.1-8b-instant costs $0.05 per 1M input tokens and $0.08 per 1M output tokens.\nllama-3.3-70b-versatile costs $0.59 per 1M input tokens and $0.79 per 1M output tokens.\n\n### Document: Unsupported Features\nLegacy FTP sync is permanently deprecated.",
-                query: "What is the input token pricing for llama-3.1-8b-instant?"
+                context: "### Document: Overview\nSemantic Gateway trims prompt context before the model call and caches replies by embedding similarity.\nSemantic Gateway trims prompt context before the model call and caches replies by embedding similarity.\n\n### Document: Pricing Model\nllama-3.1-8b-instant costs $0.05 per 1M input tokens and $0.08 per 1M output tokens.\nllama-3.3-70b-versatile costs $0.59 per 1M input tokens and $0.79 per 1M output tokens.\n\n### Document: Unsupported Features\nLegacy FTP sync is permanently deprecated.",
+                query: "What is the input token pricing for llama-3.1-8b-instant?",
+                hint: "Three retrieved chunks, one of which answers the question."
             },
             complex: {
                 context: "## System Requirements for Distributed Event Pipeline\nHigh-throughput message pipeline processing 100k events/sec.\nComponents must handle network partitions with circuit breakers.\nWorkers should process batches asynchronously with backpressure.",
-                query: "Analyze the architecture of a high-concurrency distributed event pipeline. Write Python code demonstrating an asynchronous worker pool with circuit breakers and fallback retry mechanisms."
+                query: "Analyze the architecture of a high-concurrency distributed event pipeline. Write Python code demonstrating an asynchronous worker pool with circuit breakers and fallback retry mechanisms.",
+                hint: "A short context with a long, keyword-heavy question. Watch which model it is routed to."
             }
         };
 
-        function escapeHtml(unsafe) {
-            return (unsafe || '').toString()
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+        var contextInput = $('chat-input');
+        var queryInput = $('query-input');
 
-        function setCompressionMode(mode) {
-            currentCompressionMode = mode;
-            document.querySelectorAll('.ds-mode-pill').forEach(el => el.classList.remove('active'));
-            const btn = document.getElementById('mode-' + mode);
-            if (btn) btn.classList.add('active');
+        // Same formula as estimate_tokens() in services/compression.py
+        function estimateTokens(text) {
+            if (!text) return 0;
+            var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+            return Math.max(1, Math.floor(Math.max(words * 1.3, text.length / 4)));
         }
-
-        function loadPreset(key) {
-            const p = PRESETS[key];
-            if (!p) return;
-            const input = document.getElementById('chat-input');
-            const qInput = document.getElementById('query-input');
-            input.value = p.context || '';
-            qInput.value = p.query || '';
-            updateCharCount();
-            input.focus();
-        }
-
         function updateCharCount() {
-            const val = document.getElementById('chat-input').value;
-            const chars = val.length;
-            const words = val.trim() ? val.trim().split(/\s+/).length : 0;
-            const tokens = Math.max(0, Math.round(Math.max(words * 1.3, chars / 4)));
-            document.getElementById('prompt-char-count').textContent = `${chars} chars · ~${tokens} tokens`;
+            var text = contextInput.value;
+            $('char-count').textContent = text.length.toLocaleString() + ' chars · ~' + estimateTokens(text).toLocaleString() + ' est. tokens';
         }
-
-        function handleKey(e) {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.ds-studio-tab-btn').forEach(el => {
-                el.classList.remove('active');
-                el.setAttribute('aria-selected', 'false');
+        function markPreset(key) {
+            document.querySelectorAll('.preset').forEach(function (button) {
+                button.setAttribute('aria-pressed', button.getAttribute('data-preset') === key ? 'true' : 'false');
             });
-            document.querySelectorAll('.ds-tab-pane').forEach(el => el.classList.remove('active'));
-            
-            const btn = document.getElementById('tabbtn-' + tabId);
-            const pane = document.getElementById('tab-' + tabId);
-            if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
-            if (pane) pane.classList.add('active');
-
-            if (tabId === 'analytics') {
-                fetchMetrics();
-                setTimeout(() => { if (latencyChart) latencyChart.resize(); }, 50);
-            }
         }
-
-        function switchResultTab(tabId) {
-            document.querySelectorAll('.ds-res-tab-btn').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.ds-res-pane').forEach(el => el.classList.remove('active'));
-            
-            const btn = document.getElementById('btn-res-' + tabId);
-            const pane = document.getElementById('pane-' + tabId);
-            if (btn) btn.classList.add('active');
-            if (pane) pane.classList.add('active');
+        function loadPreset(key) {
+            var preset = PRESETS[key];
+            if (!preset) return;
+            contextInput.value = preset.context;
+            queryInput.value = preset.query;
+            $('preset-hint').textContent = preset.hint;
+            markPreset(key);
+            updateCharCount();
         }
+        document.querySelectorAll('.preset').forEach(function (button) {
+            button.addEventListener('click', function () { loadPreset(button.getAttribute('data-preset')); });
+        });
+        function onEdit() { markPreset(null); updateCharCount(); }
+        contextInput.addEventListener('input', onEdit);
+        queryInput.addEventListener('input', function () { markPreset(null); });
 
-        function switchTermTab(tabId) {
-            document.querySelectorAll('.ds-term-tab').forEach(el => el.classList.remove('active'));
-            document.getElementById('ttab-' + tabId).classList.add('active');
+        // ── Send flow ───────────────────────────────────────────────────
+        var sendButton = $('btn-send');
+        var cancelButton = $('btn-cancel');
+        var errorBox = $('error-alert');
+        var resultBox = $('result');
+        var inflight = null;       // AbortController of the running request
 
-            document.getElementById('term-pane-quick').style.display = tabId === 'quick' ? 'block' : 'none';
-            document.getElementById('term-pane-compress').style.display = tabId === 'compress' ? 'block' : 'none';
-            document.getElementById('term-pane-sdk').style.display = tabId === 'sdk' ? 'block' : 'none';
-            document.getElementById('term-pane-mcp').style.display = tabId === 'mcp' ? 'block' : 'none';
+        function showError(message, canRetry) {
+            $('error-text').textContent = message;
+            $('btn-retry').hidden = !canRetry;
+            errorBox.hidden = false;
         }
-
-        function copyTermCode() {
-            let text = '';
-            if (document.getElementById('term-pane-quick').style.display !== 'none') {
-                text = 'uvicorn main:app --host 0.0.0.0 --port 8000 --reload';
-            } else if (document.getElementById('term-pane-compress').style.display !== 'none') {
-                text = 'curl -X POST http://localhost:8000/v1/compress -H "Content-Type: application/json" -d \'{"context": "Huge log dump...", "query": "What failed in deploy?", "mode": "compiler"}\'';
-            } else if (document.getElementById('term-pane-sdk').style.display !== 'none') {
-                text = 'from services.compression import compress_for_turn\n\nres = compress_for_turn(context=chat_history, user_query="What failed?", mode="compiler")\nprint(res)';
-            } else {
-                text = 'npm install -g @semantic-llm/mcp-proxy && npx @semantic-llm/mcp setup --proxy http://localhost:8000';
-            }
-            copyText(text);
-            const copyLabel = document.getElementById('copy-text');
-            copyLabel.textContent = 'Copied!';
-            setTimeout(() => { copyLabel.textContent = 'Copy'; }, 2000);
+        function clearError() { errorBox.hidden = true; $('error-text').textContent = ''; }
+        function setBusy(busy) {
+            sendButton.disabled = busy;
+            $('btn-spinner').hidden = !busy;
+            cancelButton.hidden = !busy;
+            if (!busy) $('btn-text').textContent = 'Trim and send';
+            if (!resultBox.hidden) resultBox.setAttribute('aria-busy', busy ? 'true' : 'false');
         }
-
-        function copyText(txt) { navigator.clipboard.writeText(txt); }
-        function openDocsModal() { document.getElementById('docs-modal').classList.add('open'); }
-        function closeDocsModal() { document.getElementById('docs-modal').classList.remove('open'); }
+        function describeDetail(payload) {
+            if (!payload || payload.detail === undefined) return '';
+            if (typeof payload.detail === 'string') return payload.detail;
+            try { return JSON.stringify(payload.detail); } catch (err) { return ''; }
+        }
 
         async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const qInput = document.getElementById('query-input');
-            const contextText = input.value.trim();
-            const queryText = qInput.value.trim();
-            const errBox = document.getElementById('error-alert');
-            errBox.style.display = 'none';
+            if (inflight) return;
+            var contextText = contextInput.value.trim();
+            var queryText = queryInput.value.trim();
+            clearError();
 
             if (!contextText) {
-                errBox.textContent = 'Please enter context before submitting.';
-                errBox.style.display = 'block';
+                showError('Add some context first. The Context box is empty.', false);
+                contextInput.focus();
                 return;
             }
 
-            const btn = document.getElementById('btn-send');
-            const btnText = document.getElementById('btn-text');
-            const btnSpinner = document.getElementById('btn-spinner');
-            
-            btn.disabled = true;
-            btnText.textContent = 'Optimizing & Routing...';
-            btnSpinner.style.display = 'inline-block';
+            var controller = new AbortController();
+            inflight = controller;
+            var timedOut = false;
+            var started = Date.now();
+            var timeout = setTimeout(function () { timedOut = true; controller.abort(); }, REQUEST_TIMEOUT_MS);
+            var ticker = setInterval(function () {
+                $('btn-text').textContent = 'Waiting… ' + Math.round((Date.now() - started) / 1000) + 's';
+            }, 500);
+            setBusy(true);
+            $('btn-text').textContent = 'Waiting…';
+            $('send-status').textContent = 'Request sent. Waiting for the gateway.';
 
             try {
-                const fullPrompt = queryText ? `${contextText}\n\nUser Question:\n${queryText}` : contextText;
-                
-                const res = await fetch('/v1/chat/completions', {
+                // The route splits context from question on this "User Question:" marker (api/router.py)
+                var prompt = queryText ? contextText + '\n\nUser Question:\n' + queryText : contextText;
+                var response = await fetch('/v1/chat/completions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [{ role: 'user', content: fullPrompt }]
-                    })
+                    body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] }),
+                    signal: controller.signal
                 });
+                var data = null;
+                try { data = await response.json(); } catch (parseError) { data = null; }
 
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.detail || `Server responded with status ${res.status}`);
+                if (!response.ok) {
+                    throw new Error(describeDetail(data) || 'The server answered with status ' + response.status + '.');
+                }
+                if (!data || typeof data !== 'object') {
+                    throw new Error('The server sent a reply that could not be read as JSON.');
                 }
 
-                const data = await res.json();
-                document.getElementById('result-container').style.display = 'block';
-
-                // 1. Output pane
-                const replyText = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : 'No response text received.';
-                document.getElementById('res-text').textContent = replyText;
-
-                // 2. Context Compression pane
-                const comp = data.compression || {};
-                const compPct = comp.compression_percent || comp.tokens_saved_pct || 0.0;
-                document.getElementById('res-tab-comp-pct').textContent = compPct > 0 ? `${compPct.toFixed(1)}% cut` : '0%';
-                document.getElementById('res-comp-summary').textContent = compPct > 0 
-                    ? `Context compressed by ${compPct.toFixed(1)}% (${comp.tokens_saved} tokens eliminated) · Risk: ${comp.compression_risk || 'low'}`
-                    : 'Context is already concise; sent directly without loss.';
-                
-                document.getElementById('diff-orig-tokens').textContent = comp.original_tokens || 0;
-                document.getElementById('diff-orig-text').textContent = comp.original_text || contextText;
-                document.getElementById('diff-opt-tokens').textContent = comp.optimized_tokens || comp.kept_tokens || 0;
-                document.getElementById('diff-saved-tokens').textContent = comp.tokens_saved || 0;
-                document.getElementById('diff-opt-text').textContent = comp.optimized_text || comp.compressed_text || contextText;
-
-                const notesUl = document.getElementById('res-savings-notes');
-                notesUl.innerHTML = '';
-                (comp.savings_notes || []).forEach(note => {
-                    const li = document.createElement('li');
-                    li.textContent = note;
-                    notesUl.appendChild(li);
-                });
-
-                // 3. Diagnostics & Sustainability Impact pane
-                const cache = data.cache || {};
-                const routing = data.routing || {};
-                const latency = data.latency || {};
-                const cost = data.cost || {};
-                const sustain = comp.sustainability || {};
-
-                document.getElementById('diag-cache').innerHTML = cache.hit
-                    ? `<span style="color:var(--ds-green); font-weight:bold;">HIT (${cache.similarity}% match)</span>`
-                    : `<span style="color:var(--ds-amber); font-weight:bold;">MISS</span> (${cache.similarity || 0}%)`;
-
-                document.getElementById('diag-model').textContent = `${routing.model || data.model} [${routing.complexity || 'SIMPLE'}]`;
-                document.getElementById('diag-latency').textContent = `${latency.total_ms || 0}ms`;
-                document.getElementById('diag-cost').textContent = `Saved $${(cost.cost_saved || 0).toFixed(5)}`;
-                
-                const co2Grams = ((sustain.co2_kg_avoided || 0) * 1000).toFixed(4);
-                document.getElementById('diag-co2').textContent = `${co2Grams} g`;
-                document.getElementById('diag-gpu').textContent = `${(sustain.gpu_seconds_avoided || 0).toFixed(3)} s`;
-
-                // Update Telemetry Metrics
-                await fetchMetrics();
-
+                renderResult(data, contextText, !!queryText);
+                $('send-status').textContent = 'Request finished. Results are shown below the form.';
+                fetchMetrics();
             } catch (err) {
-                console.error(err);
-                errBox.textContent = `Gateway Error: ${err.message}`;
-                errBox.style.display = 'block';
+                // Never leave the previous request's numbers on screen next to an error
+                resultBox.hidden = true;
+                var message;
+                if (err && err.name === 'AbortError') {
+                    message = timedOut
+                        ? 'No response after ' + Math.round(REQUEST_TIMEOUT_MS / 1000) + ' seconds, so the request was stopped. The server may be starting up or waiting on the model provider.'
+                        : 'Request cancelled.';
+                } else if (err instanceof TypeError) {
+                    message = 'Could not reach the server. Check your connection and try again.';
+                } else {
+                    message = 'The gateway returned an error: ' + (err && err.message ? err.message : 'unknown error');
+                }
+                showError(message, true);
+                $('send-status').textContent = '';
             } finally {
-                btn.disabled = false;
-                btnText.textContent = 'Compress & Route';
-                btnSpinner.style.display = 'none';
+                clearTimeout(timeout);
+                clearInterval(ticker);
+                inflight = null;
+                setBusy(false);
             }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        $('btn-retry').addEventListener('click', sendMessage);
+        cancelButton.addEventListener('click', function () {
+            if (inflight) inflight.abort();
+        });
+        [contextInput, queryInput].forEach(function (input) {
+            input.addEventListener('keydown', function (event) {
+                if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+
+        // ── Result rendering ────────────────────────────────────────────
+        function chip(text, tone) { return el('span', { class: 'chip' + (tone ? ' ' + tone : '') }, text); }
+
+        function detail(label, value, sub, mono) {
+            var dd = el('dd', mono ? { class: 'mono' } : {}, value);
+            if (sub) dd.appendChild(el('span', { class: 'sub' }, sub));
+            return el('div', { class: 'detail' }, [el('dt', {}, label), dd]);
+        }
+
+        function blockItem(block, kept) {
+            return el('li', { class: 'block-item ' + (kept ? 'kept' : 'dropped') }, [
+                el('span', { class: 'sign', 'aria-hidden': 'true' }, kept ? '+' : '−'),
+                el('span', { class: 'heading' }, String(block.heading || 'Untitled block')),
+                el('span', { class: 'tokens' }, int(block.tokens) + ' est. tokens'),
+                el('span', { class: 'reason' }, String(block.reason || ''))
+            ]);
+        }
+
+        function fillBlocks(listId, countId, blocks, kept) {
+            var list = $(listId);
+            list.textContent = '';
+            $(countId).textContent = blocks.length;
+            if (!blocks.length) {
+                list.appendChild(el('li', { class: 'block-empty' }, kept ? 'No blocks listed.' : 'Nothing was dropped.'));
+                return;
+            }
+            blocks.forEach(function (block) { list.appendChild(blockItem(block, kept)); });
+        }
+
+        function renderResult(data, sentContext, hadQuestion) {
+            var comp = data.compression || {};
+            var cache = data.cache || {};
+            var routing = data.routing || {};
+            var latency = data.latency || {};
+            var cost = data.cost || {};
+            var provider = data.provider || {};
+            var simulated = provider.simulated === true || provider.status === 'fallback';
+            var hit = cache.hit === true;
+
+            var originalTokens = num(comp.original_tokens);
+            var keptTokens = num(comp.optimized_tokens !== undefined ? comp.optimized_tokens : comp.kept_tokens);
+            var savedTokens = num(comp.tokens_saved);
+            var savedPct = num(comp.compression_percent !== undefined ? comp.compression_percent : comp.tokens_saved_pct);
+
+            // 1. Chips: who answered, cache, model, time
+            var chips = $('result-chips');
+            chips.textContent = '';
+            if (simulated) chips.appendChild(chip('Placeholder reply · no model ran', 'warn'));
+            else if (provider.status === 'groq') chips.appendChild(chip('Model reply · Groq', 'ok'));
+            else if (provider.status === 'ollama') chips.appendChild(chip('Model reply · Ollama', 'ok'));
+            else chips.appendChild(chip('Reply source not reported', ''));
+            chips.appendChild(hit ? chip('Cache hit · ' + pct(cache.similarity) + ' similar', 'info') : chip('Cache miss', ''));
+            if (routing.model || data.model) chips.appendChild(chip(String(routing.model || data.model), 'plain'));
+            chips.appendChild(chip(ms(latency.total_ms), 'plain'));
+
+            // 2. Reply tab
+            var banner = $('placeholder-banner');
+            banner.textContent = '';
+            banner.hidden = !simulated;
+            if (simulated) {
+                banner.appendChild(el('strong', {}, 'This is placeholder text, not a model answer. '));
+                if (hit) {
+                    banner.appendChild(document.createTextNode(
+                        'It was replayed from the cache. When that entry was stored, no model could be reached, so the stored reply is canned text.'
+                    ));
+                } else {
+                    banner.appendChild(document.createTextNode(
+                        'Neither Groq nor the Ollama fallback could be reached from this server (usually because no '
+                    ));
+                    banner.appendChild(el('code', {}, 'GROQ_API_KEY'));
+                    banner.appendChild(document.createTextNode(' is set), so the gateway returned canned text.'));
+                }
+                banner.appendChild(document.createTextNode(' The trimming, cache and routing results on the other tabs are real.'));
+            }
+            $('cache-note').hidden = !hit;
+            $('cache-note').textContent = 'Replayed from the cache, with no model call.' + (hadQuestion
+                ? ' The lookup compares the trimmed context, not the question, so a different question about the same context gets this same reply.'
+                : '');
+            var choice = data.choices && data.choices[0] && data.choices[0].message;
+            $('reply-text').textContent = choice && choice.content ? choice.content : 'The response contained no reply text.';
+
+            // 3. Context diff tab
+            $('rt-diff-pct').textContent = savedTokens > 0 ? '(−' + pct(savedPct) + ')' : '';
+            $('diff-summary').textContent = savedTokens > 0
+                ? 'Estimated tokens: ' + int(originalTokens) + ' → ' + int(keptTokens) + ' (' + int(savedTokens) + ' fewer, ' + pct(savedPct) + ')'
+                : 'Nothing was trimmed. Estimated tokens: ' + int(originalTokens) + '.';
+            var dedupe = (comp.savings_notes || []).map(function (note) {
+                var match = /^Deduplicated (\d+)/.exec(String(note));
+                return match ? Number(match[1]) : 0;
+            }).reduce(function (a, b) { return a + b; }, 0);
+            var kept = Array.isArray(comp.kept_blocks) ? comp.kept_blocks : [];
+            var dropped = Array.isArray(comp.dropped_blocks) ? comp.dropped_blocks : [];
+            var noteParts = [];
+            if (dedupe > 0) noteParts.push(dedupe + ' duplicate line' + (dedupe === 1 ? '' : 's') + ' removed before scoring');
+            if (kept.length || dropped.length) noteParts.push(kept.length + ' block' + (kept.length === 1 ? '' : 's') + ' kept, ' + dropped.length + ' dropped');
+            $('diff-note').textContent = noteParts.join(' · ');
+            $('diff-note').hidden = !noteParts.length;
+
+            $('diff-orig-tokens').textContent = int(originalTokens);
+            $('diff-opt-tokens').textContent = int(keptTokens);
+            $('diff-orig-text').textContent = comp.original_text || sentContext;
+            $('diff-opt-text').textContent = comp.optimized_text || comp.compressed_text || sentContext;
+
+            $('blocks').hidden = !(kept.length || dropped.length);
+            fillBlocks('kept-list', 'kept-count', kept, true);
+            fillBlocks('dropped-list', 'dropped-count', dropped, false);
+
+            // 4. Details tab
+            var details = $('details');
+            details.textContent = '';
+            var threshold = cache.threshold !== undefined ? ' (threshold ' + pctShort(cache.threshold) + ')' : '';
+
+            details.appendChild(detail(
+                'Reply source',
+                simulated ? 'Placeholder' : provider.status === 'groq' ? 'Groq' : provider.status === 'ollama' ? 'Ollama' : 'Not reported',
+                simulated ? (hit ? 'No model ran. The cached reply is a placeholder.' : 'No model ran. Groq and Ollama were both unavailable.')
+                    : hit ? 'Replayed from the cache. This is where the cached reply first came from.'
+                    : provider.status ? 'provider.status = ' + provider.status : 'This server did not send a provider field.'
+            ));
+            details.appendChild(detail(
+                'Cache',
+                hit ? 'Hit' : 'Miss',
+                hit ? pct(cache.similarity) + ' similar to a stored trimmed context' + threshold
+                    : num(cache.similarity) > 0 ? 'Closest stored prompt: ' + pct(cache.similarity) + threshold
+                    : 'No similar prompt stored' + threshold
+            ));
+            details.appendChild(detail(
+                'Model route',
+                String(routing.model || data.model || 'unknown'),
+                (routing.complexity ? routing.complexity + '. ' : '') +
+                    (hit ? 'Not called, because the reply came from the cache.'
+                        : simulated ? 'Chosen by the router, but no provider was reachable.'
+                        : String(routing.reason || '')),
+                true
+            ));
+            details.appendChild(detail(
+                'Latency',
+                ms(latency.total_ms),
+                'Cache lookup ' + ms(latency.cache_lookup_ms) +
+                    (hit ? '' : ' · ' + (simulated ? 'provider attempts ' : 'model call ') + ms(latency.upstream_inference_ms)),
+                true
+            ));
+            details.appendChild(detail(
+                'Estimated tokens',
+                int(originalTokens) + ' → ' + int(keptTokens),
+                savedTokens > 0 ? int(savedTokens) + ' fewer (' + pct(savedPct) + ')' : 'Nothing trimmed',
+                true
+            ));
+            details.appendChild(detail(
+                'Estimated cost',
+                usd(cost.cost_saved) + ' lower',
+                'Baseline ' + usd(cost.direct_cost) + ' · this request ' + usd(cost.actual_spent),
+                true
+            ));
+            var costNote = $('details-note');
+            costNote.textContent = '';
+            costNote.appendChild(document.createTextNode(
+                'Cost is an estimate: the baseline is the untrimmed prompt on the 70B model, priced from the table in '
+            ));
+            costNote.appendChild(el('code', {}, 'services/metrics.py'));
+            costNote.appendChild(document.createTextNode(
+                ' with estimated token counts.' + (simulated ? ' No model was called for this request, so nothing was actually spent.' : '')
+            ));
+
+            resultBox.hidden = false;
+            resultBox.setAttribute('aria-busy', 'false');
+            selectTab($('rt-reply'), false);
+        }
+
+        // ── Counters and request log ────────────────────────────────────
+        var metricsStatus = $('metrics-status');
+        var metricsLoaded = false;
+        var metricsBusy = false;
+        var lastQueries = [];
+        var chart = null;
+        var chartLibFailed = false;
+
+        function setMetricsStatus(state) {
+            var map = {
+                loading: ['Loading', ''],
+                ok: ['Live', 'ok'],
+                stale: ['Not updating', 'warn'],
+                error: ['Unavailable', 'bad']
+            };
+            metricsStatus.className = 'chip' + (map[state][1] ? ' ' + map[state][1] : '');
+            metricsStatus.textContent = '';
+            if (state === 'ok') metricsStatus.appendChild(el('span', { class: 'dot', 'aria-hidden': 'true' }));
+            metricsStatus.appendChild(document.createTextNode(map[state][0]));
+        }
+        function setMetricsError(message) {
+            ['metrics-error', 'log-error'].forEach(function (id) { $(id).hidden = !message; });
+            $('metrics-error-text').textContent = message || '';
+            $('log-error-text').textContent = message || '';
+        }
+        function tableState(message) {
+            var tbody = $('queries-tbody');
+            tbody.textContent = '';
+            tbody.appendChild(el('tr', {}, el('td', { colspan: '8', class: 'state' }, message)));
         }
 
         async function fetchMetrics() {
+            if (metricsBusy) return;
+            metricsBusy = true;
+            if (!metricsLoaded) setMetricsStatus('loading');
+            var controller = new AbortController();
+            var timeout = setTimeout(function () { controller.abort(); }, METRICS_TIMEOUT_MS);
             try {
-                const res = await fetch('/api/metrics');
-                if (!res.ok) return;
-                const data = await res.json();
-
-                // Sandbox stats
-                document.getElementById('val-requests').textContent = data.total_requests;
-                document.getElementById('val-hitrate').textContent = data.hit_rate.toFixed(1) + '%';
-                document.getElementById('val-tokens-saved').textContent = `${data.total_tokens_saved.toLocaleString()} (${data.token_reduction_rate.toFixed(1)}%)`;
-                document.getElementById('val-saved').textContent = '$' + data.total_saved.toFixed(5);
-                
-                document.getElementById('val-latency-direct').textContent = data.avg_latency_miss > 0 ? Math.round(data.avg_latency_miss) + 'ms' : '—';
-                document.getElementById('val-latency-cached').textContent = data.avg_latency_hit > 0 ? Math.round(data.avg_latency_hit) + 'ms' : '—';
-
-                // Dashboard cards
-                document.getElementById('dash-requests').textContent = data.total_requests;
-                document.getElementById('dash-hitrate').textContent = data.hit_rate.toFixed(1) + '%';
-                document.getElementById('dash-tokens-saved').textContent = data.total_tokens_saved.toLocaleString();
-                document.getElementById('dash-cost-saved').textContent = '$' + data.total_saved.toFixed(5);
-
-                // Update Table
-                const tbody = document.getElementById('queries-tbody');
-                if (data.queries && data.queries.length > 0) {
-                    tbody.innerHTML = '';
-                    data.queries.forEach(q => {
-                        const tr = document.createElement('tr');
-                        const routeBadge = (q.complexity || 'SIMPLE').toUpperCase() === 'COMPLEX' ? 'complex' : 'simple';
-                        const cacheDot = q.is_cache_hit ? 'hit' : 'miss';
-                        const cacheLabel = q.is_cache_hit ? `HIT (${q.similarity_score}%)` : 'MISS';
-                        const timeStr = q.timestamp ? new Date(q.timestamp).toLocaleTimeString() : '—';
-
-                        tr.innerHTML = `
-                            <td style="color:var(--ds-muted); font-size:0.8rem; font-family:var(--font-mono);">${escapeHtml(timeStr)}</td>
-                            <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(q.prompt)}">${escapeHtml(q.prompt)}</td>
-                            <td><span class="ds-badge ${routeBadge}">${escapeHtml(q.complexity || 'SIMPLE')}</span></td>
-                            <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--ds-secondary);">${escapeHtml(q.model_routed)}</td>
-                            <td><span class="ds-status-pill ${cacheDot}">● ${cacheLabel}</span></td>
-                            <td style="font-family:var(--font-mono); font-size:0.8rem;">${q.original_tokens || 0} → ${q.optimized_tokens || 0}</td>
-                            <td style="font-weight:600; font-family:var(--font-mono);">${Math.round(q.latency_ms)}ms</td>
-                            <td style="color:var(--ds-green); font-weight:600; font-family:var(--font-mono);">$${(q.cost_saved || 0).toFixed(5)}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-
-                    updateChart(data.queries);
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--ds-muted); padding:2rem;">No queries recorded yet. Send a request in the Sandbox!</td></tr>';
-                    updateChart([]);
-                }
+                var response = await fetch('/api/metrics', { signal: controller.signal });
+                if (!response.ok) throw new Error('status ' + response.status);
+                var data = await response.json();
+                renderMetrics(data || {});
+                metricsLoaded = true;
+                setMetricsStatus('ok');
+                setMetricsError('');
             } catch (err) {
-                console.error('Metrics fetch error:', err);
+                if (metricsLoaded) {
+                    setMetricsStatus('stale');
+                    setMetricsError('The last refresh failed. The numbers shown are from the previous successful load.');
+                } else {
+                    setMetricsStatus('error');
+                    setMetricsError('Could not load /api/metrics, so no counters are shown.');
+                    tableState('The request log could not be loaded.');
+                    showChartMessage('The request log could not be loaded.');
+                }
+            } finally {
+                clearTimeout(timeout);
+                metricsBusy = false;
             }
         }
 
-        function updateChart(queries) {
-            const chrono = [...queries].reverse().slice(-20);
-            const labels = [], hitData = [], missData = [];
-            chrono.forEach(q => {
-                const d = new Date(q.timestamp);
-                labels.push(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                if (q.is_cache_hit) {
-                    hitData.push(q.latency_ms);
-                    missData.push(null);
-                } else {
-                    missData.push(q.latency_ms);
-                    hitData.push(null);
-                }
-            });
+        function renderMetrics(data) {
+            var requests = num(data.total_requests);
+            $('val-requests').textContent = int(requests);
+            $('dash-requests').textContent = int(requests);
+            $('val-hitrate').textContent = pct(data.hit_rate);
+            $('dash-hitrate').textContent = pct(data.hit_rate);
+            $('val-tokens-saved').textContent = int(data.total_tokens_saved) + ' (' + pct(data.token_reduction_rate) + ')';
+            $('dash-tokens-saved').textContent = int(data.total_tokens_saved);
+            $('val-saved').textContent = '$' + num(data.total_saved).toFixed(5);
+            $('dash-cost-saved').textContent = '$' + num(data.total_saved).toFixed(5);
+            $('val-latency-miss').textContent = num(data.avg_latency_miss) > 0 ? ms(data.avg_latency_miss) : '—';
+            $('val-latency-hit').textContent = num(data.avg_latency_hit) > 0 ? ms(data.avg_latency_hit) : '—';
 
-            const canvas = document.getElementById('latencyChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            if (latencyChart) latencyChart.destroy();
-            
-            latencyChart = new Chart(ctx, {
-                type: 'line',
+            lastQueries = Array.isArray(data.queries) ? data.queries : [];
+            renderTable(lastQueries);
+            renderChart();
+        }
+
+        function renderTable(queries) {
+            if (!queries.length) {
+                tableState('No requests recorded yet. Send one from the Playground tab.');
+                return;
+            }
+            var tbody = $('queries-tbody');
+            tbody.textContent = '';
+            queries.forEach(function (q) {
+                var hit = !!q.is_cache_hit;
+                var complex = String(q.complexity || 'SIMPLE').toUpperCase() === 'COMPLEX';
+                var time = q.timestamp ? new Date(q.timestamp) : null;
+                var prompt = String(q.prompt || '').replace(/\s+/g, ' ');
+                tbody.appendChild(el('tr', {}, [
+                    el('td', { class: 'mono' }, time && !isNaN(time) ? time.toLocaleTimeString() : '—'),
+                    el('td', { class: 'prompt' }, prompt.length > 90 ? prompt.slice(0, 90) + '…' : prompt),
+                    el('td', {}, chip(complex ? 'Complex' : 'Simple', complex ? 'warn' : '')),
+                    el('td', { class: 'mono' }, String(q.model_routed || '—')),
+                    el('td', {}, chip(hit ? 'Hit · ' + pct(q.similarity_score) : 'Miss', hit ? 'info' : '')),
+                    el('td', { class: 'mono' }, int(q.original_tokens) + ' → ' + int(q.optimized_tokens)),
+                    el('td', { class: 'mono' }, ms(q.latency_ms)),
+                    el('td', { class: 'mono' }, '$' + num(q.cost_saved).toFixed(5))
+                ]));
+            });
+        }
+
+        function showChartMessage(message) {
+            $('chart-wrap').hidden = true;
+            $('chart-empty').hidden = false;
+            $('chart-empty').textContent = message;
+        }
+
+        // The chart is only drawn while the Request log tab is visible: a hidden canvas has no size.
+        function renderChart() {
+            if ($('panel-log').hidden) return;
+            var recent = lastQueries.slice(0, 20).reverse(); // API returns newest first
+            if (!recent.length) {
+                if (chart) { chart.destroy(); chart = null; }
+                showChartMessage(metricsLoaded || lastQueries.length ? 'No requests recorded yet. Send one from the Playground tab.' : 'Loading requests…');
+                return;
+            }
+            if (typeof window.Chart === 'undefined') {
+                showChartMessage(chartLibFailed
+                    ? 'The chart library could not be loaded. The table below has the same values.'
+                    : 'Loading the chart…');
+                return;
+            }
+            $('chart-empty').hidden = true;
+            $('chart-wrap').hidden = false;
+
+            var labels = recent.map(function (q) {
+                var d = new Date(q.timestamp);
+                return isNaN(d) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            });
+            var hits = recent.map(function (q) { return q.is_cache_hit ? num(q.latency_ms) : null; });
+            var misses = recent.map(function (q) { return q.is_cache_hit ? null : num(q.latency_ms); });
+
+            if (chart) {
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = hits;
+                chart.data.datasets[1].data = misses;
+                chart.update('none');
+                return;
+            }
+            var tick = { color: '#a7adbb', font: { family: "'JetBrains Mono', monospace", size: 10.5 } };
+            chart = new window.Chart($('latency-chart').getContext('2d'), {
+                type: 'bar',
                 data: {
-                    labels,
+                    labels: labels,
                     datasets: [
-                        {
-                            label: 'Vector Cache Hit (ms)',
-                            data: hitData,
-                            borderColor: '#4d88ff',
-                            backgroundColor: '#4d88ff',
-                            pointRadius: 5,
-                            borderWidth: 2,
-                            tension: 0.15,
-                            spanGaps: true
-                        },
-                        {
-                            label: 'Direct Upstream Miss (ms)',
-                            data: missData,
-                            borderColor: '#febc2e',
-                            backgroundColor: '#febc2e',
-                            pointRadius: 5,
-                            borderWidth: 2,
-                            tension: 0.15,
-                            spanGaps: true
-                        }
+                        { label: 'Cache hit', data: hits, backgroundColor: '#4d88ff', borderRadius: 3, minBarLength: 3, grouped: false, maxBarThickness: 34 },
+                        { label: 'Cache miss', data: misses, backgroundColor: '#febc2e', borderRadius: 3, minBarLength: 3, grouped: false, maxBarThickness: 34 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: reduceMotion ? false : { duration: 300 },
                     plugins: {
-                        legend: { position: 'top', labels: { boxWidth: 12, color: '#9aa0b0', font: { family: 'DM Sans', size: 11.5 } } },
+                        legend: { position: 'top', align: 'start', labels: { boxWidth: 10, boxHeight: 10, color: '#a7adbb', font: { family: "'DM Sans', sans-serif", size: 12 } } },
                         tooltip: {
-                            backgroundColor: '#16181f',
-                            titleColor: '#ffffff',
-                            bodyColor: '#f0f2f7',
-                            borderColor: 'rgba(255,255,255,0.1)',
-                            borderWidth: 1
+                            backgroundColor: '#15171d', titleColor: '#ffffff', bodyColor: '#eef0f5',
+                            borderColor: 'rgba(255,255,255,0.18)', borderWidth: 1,
+                            callbacks: { label: function (ctx) { return ctx.dataset.label + ': ' + Math.round(ctx.parsed.y).toLocaleString() + ' ms'; } }
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Latency (ms)', color: '#818798' },
-                            ticks: { color: '#818798' },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
-                        },
-                        x: {
-                            ticks: { color: '#818798' },
-                            grid: { color: 'rgba(255,255,255,0.03)' }
-                        }
+                        y: { beginAtZero: true, title: { display: true, text: 'Latency (ms)', color: '#a7adbb' }, ticks: tick, grid: { color: 'rgba(255,255,255,0.06)' } },
+                        x: { ticks: Object.assign({ maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, tick), grid: { display: false } }
                     }
                 }
             });
         }
 
-        // Initialize on load
-        updateCharCount();
+        // Chart.js is loaded with `defer`, so it arrives after this script has run
+        var chartLib = $('chartjs-lib');
+        if (chartLib) {
+            chartLib.addEventListener('load', renderChart);
+            chartLib.addEventListener('error', function () { chartLibFailed = true; renderChart(); });
+        }
+        $('studio-tabs').addEventListener('tabchange', function (event) {
+            if (event.detail === 'tab-log') { renderChart(); fetchMetrics(); }
+        });
+        document.querySelectorAll('[data-metrics-retry]').forEach(function (button) {
+            button.addEventListener('click', fetchMetrics);
+        });
+
+        // ── Start ───────────────────────────────────────────────────────
+        loadPreset('support');
         fetchMetrics();
-        setInterval(fetchMetrics, 8000);
+        setInterval(function () { if (!document.hidden) fetchMetrics(); }, METRICS_POLL_MS);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) fetchMetrics(); });
+    })();
     </script>
-    <style>
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    </style>
 </body>
 </html>
